@@ -60,8 +60,8 @@ int main(int, char**)
             ippiFilterBorderGetSize(kernelSize, {dstTile.m_size.width, dstTile.m_size.width} , ipp16s, ipp16s, 1, &filterSpecSize, &filterBufferSize);
             pFilterSpec = (IppiFilterBorderSpec *)ippsMalloc_16s(filterSpecSize);
             pFilterBuffer = ippsMalloc_16s(filterBufferSize);
-            ippiFilterBorderInit_16s(kernel, kernelSize, 1, ipp8u, 1, numberChannels, ippRndHintAccurate, pFilterSpec);
-            ippiFilterBorder_16s_C1R(&cvtTile, srcStep, &dstTile, dstStep, dstTile.m_size, border, pFilterSpec, pFilterBuffer );
+            ippiFilterBorderInit_16s(kernel, kernelSize, 1, ipp8u, numberChannels, ippRndHintAccurate, pFilterSpec);
+            ippiFilterBorder_16s_C1R(cvtTile.m_ptr, srcStep, dstTile.m_ptr, dstStep, {dstTile.m_size.width, dstTile.m_size.width}, border, 0, pFilterSpec, pFilterBuffer );
         }
     }
 }
