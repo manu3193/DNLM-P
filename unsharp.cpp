@@ -57,11 +57,11 @@ int main(int, char**)
 
             // Run functions
             //ipp::iwiFilterSobel(&cvtTile, &dstTile, iwiDerivHorFirst, ippMskSize3x3, border);
-            ippiFilterBorderGetSize(kernelSize, {dstTile.m_size.width, dstTile.m_size.width} , ipp16s, ipp16s, 1, &filterSpecSize, &filterBufferSize);
+            ippiFilterBorderGetSize(kernelSize, {dstTile.m_size.width, dstTile.m_size.height} , ipp16s, ipp16s, 1, &filterSpecSize, &filterBufferSize);
             pFilterSpec = (IppiFilterBorderSpec *)ippsMalloc_16s(filterSpecSize);
             pFilterBuffer = ippsMalloc_16s(filterBufferSize);
             ippiFilterBorderInit_16s(kernel, kernelSize, 1, ipp8u, numberChannels, ippRndHintAccurate, pFilterSpec);
-            ippiFilterBorder_16s_C1R(cvtTile.m_ptr, srcStep,(Ipp16s *) dstTile.m_ptr, dstStep, {dstTile.m_size.width, dstTile.m_size.width}, border, 0, pFilterSpec, pFilterBuffer );
+            ippiFilterBorder_16s_C1R(cvtTile.m_ptr, srcStep,(Ipp16s *) dstTile.m_ptr, dstStep, {dstTile.m_size.width, dstTile.m_size.height}, border, 0, pFilterSpec, pFilterBuffer );
         }
     }
 }
