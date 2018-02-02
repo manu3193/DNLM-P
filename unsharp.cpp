@@ -27,7 +27,7 @@ int main(int, char**)
         int                   filterBufferSize = 0, filterSpecSize = 0; // Size of the work buffer and filter specification structure required for filtering
         int                   srcStep = 0, dstStep = 0; //Steps in bytes through src and dst images
         IppiFilterBorderSpec  *pFilterSpec = NULL;   //Filter specification context structure 
-        Ipp16s                *pFilterBuffer = NULL; //Filter pointer to buffer
+        Ipp8u                *pFilterBuffer = NULL; //Filter pointer to buffer
 
         // Color convert threading
         #pragma omp for
@@ -61,7 +61,7 @@ int main(int, char**)
             pFilterSpec = (IppiFilterBorderSpec *)ippsMalloc_16s(filterSpecSize);
             pFilterBuffer = ippsMalloc_16s(filterBufferSize);
             ippiFilterBorderInit_16s(kernel, kernelSize, 1, ipp8u, numberChannels, ippRndHintAccurate, pFilterSpec);
-            ippiFilterBorder_16s_C1R(cvtTile.m_ptr, srcStep, dstTile.m_ptr, dstStep, {dstTile.m_size.width, dstTile.m_size.width}, border, 0, pFilterSpec, pFilterBuffer );
+            ippiFilterBorder_16s_C1R(cvtTile.m_ptr, srcStep,(Ipp16s *) dstTile.m_ptr, dstStep, {dstTile.m_size.width, dstTile.m_size.width}, border, 0, pFilterSpec, pFilterBuffer );
         }
     }
 }
