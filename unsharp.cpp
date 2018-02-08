@@ -14,7 +14,7 @@ int main(int, char**)
     ipp::IwiSize   tileSize(dstImage.m_size.width, (dstImage.m_size.height + threads - 1)/threads); // One tile per thread
     IppiSize       kernelSize = {3, 3};
     IppiBorderSize borderSize = iwiSizeToBorderSize(iwiMaskToSize(ippMskSize3x3)); // Convert kernel size to border size
-    
+
     const Ipp16s   kernel[3*3] = {-1/8, -1/8, -1/8, -1/8, 16/8, -1/8, -1/8, -1/8, -1/8}; // Define high pass filter
     int   numberChannels = 1; //Number of channels of the cvt and src tile
 
@@ -26,8 +26,8 @@ int main(int, char**)
         ipp::IwiImage         srcTile, cvtTile, dstTile;
         int                   filterBufferSize = 0, filterSpecSize = 0; // Size of the work buffer and filter specification structure required for filtering
         int                   srcStep = 0, dstStep = 0; //Steps in bytes through src and dst images
-        IppiFilterBorderSpec  *pFilterSpec = NULL;   //Filter specification context structure 
-        Ipp8u                *pFilterBuffer = NULL; //Filter pointer to buffer
+        IppiFilterBorderSpec  *pFilterSpec = NULL;   //Filter specification context structure
+        Ipp16s                *pFilterBuffer = NULL; //Filter pointer to buffer
 
         // Color convert threading
         #pragma omp for
@@ -61,7 +61,7 @@ int main(int, char**)
             pFilterSpec = (IppiFilterBorderSpec *)ippsMalloc_16s(filterSpecSize);
             pFilterBuffer = ippsMalloc_16s(filterBufferSize);
             ippiFilterBorderInit_16s(kernel, kernelSize, 1, ipp8u, numberChannels, ippRndHintAccurate, pFilterSpec);
-            ippiFilterBorder_16s_C1R(cvtTile.m_ptr, srcStep,(Ipp16s *) dstTile.m_ptr, dstStep, {dstTile.m_size.width, dstTile.m_size.height}, border, 0, pFilterSpec, pFilterBuffer );
+            ippiFilterBorder_16s_C1R((Ipp16s *)cvtTile.m_ptr, srcStep,(Ipp16s *) dstTile.m_ptr, dstStep, {dstTile.m_size.width, dstTile.m_size.height}, border, 0, pFilterSpec, pFilterBuffer );
         }
     }
 }
