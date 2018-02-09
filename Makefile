@@ -9,13 +9,13 @@ IPP_IW_LIBS_PATH = $(IPP_IW_ROOT)/lib/intel64
 # define the C compiler to use
 CC = icc
 # define any compile-time flags
-CFLAGS = -qopenmp -O3 -xmic-avx512 -ipp=common  -fma -align -finline-functions
-LIBS = $(IPP_IW_LIBS_PATH)/libipp_iw.a $(IPP_LIBS_PATH)/libippi.a $(IPP_LIBS_PATH)/libippcc.a $(IPP_LIBS_PATH)/libipps.a $(IPP_LIBS_PATH)/libippvm.a  $(IPP_LIBS_PATH)/libippcore.a
+CFLAGS = -qopenmp -O3 -xmic-avx512  -fma -align -finline-functions
+LIBS = -lippi -lippcc -lipps -lippvm  -lippcore
 
 LDFLAGS =-g3 -Wall
 # define any directories containing header files other than /usr/include
 #
-INCLUDES= -I$(IPPROOT)/include -I$(IPP_IW_ROOT)/include
+INCLUDES= -I$(IPPROOT)/include 
 
 
 # define the C source files
