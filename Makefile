@@ -15,7 +15,7 @@ LIBS = -lippi -lippcc -lipps -lippvm  -lippcore
 LDFLAGS =-g3 -Wall
 # define any directories containing header files other than /usr/include
 #
-INCLUDES= -I$(IPPROOT)/include 
+INCLUDES= -I$(IPPROOT)/include
 
 
 # define the C source files
@@ -42,17 +42,18 @@ MAIN = hello
 
 .PHONY: clean
 
-all:
-	$(CC) $(OBJS) $(CFLAGS) $(INCLUDES) -o $(MAIN) $(LDFLAGS) $(LIBS)
+
+$(MAIN): $(OBJS) 
+	   $(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) -o $@ $(LIBS)
+
 
 # this is a suffix replacement rule for building .o's from .c's
 # it uses automatic variables $<: the name of the prerequisite of
 # the rule(a .c file) and $@: the name of the target of the rule (a .o file)
 # (see the gnu make manual section about automatic variables)
-.c.o: $(CC) $(CFLAGS) $(INCLUDES) -c $<  -o $@
+.c.o:
+	 $(CC) -c $(CFLAGS) $<
 
 clean:
-	rm *.o *~ $(MAIN)
+	rm $(MAIN) $(OBJS)
 
-
-# DO NOT DELETE THIS LINE -- make depend needs it
