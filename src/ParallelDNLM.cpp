@@ -56,33 +56,41 @@ Mat ParallelDNLM::processImage(const Mat& inputImage){
 
 //Input image must be from 0 to 255
 Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, double sigma_s, int sigma_r, int lambda){
-    //Create output image
-    Mat outputImage = srcImage.clone();
+    
     //Variables used for image format conversion
     IppiSize roi;
     roi.width = srcImage.size().width;
     roi.height = srcImage.size().height;
+
+    //Compute the step in bytes of the 8u and 32f image
+    int 8uStep = roi.width * sizeof(Ipp8u); 
+    int 32fStep = roi.width * sizeof(Ipp32f);
+
+    //Allocate memory
+    Ipp8u *pSrcImage = (Ipp8u*)&srcImage.data[0];                               //Get pointer to src image data
+    Ipp32f *pIpp32fImage = ippiMalloc_32f_C1(roi.width, roi.height, &32fStep);  //Allocate buffer for converted image  
+    Ipp8u *pDstImage = (Ipp8u*)&outputImage.data[0];                            //Get buffer for output image 
+
+    //Create output image
+    Mat outputImage = srcImage.clone();
+    
     //Scale factor to normalize 32f image
-    Ipp32f scaleFactor[3] = {1.0/255.0, 1.0/255.0, 1.0/255.0} 
+    Ipp32f normFactor[3] = {1.0/255.0, 1.0/255.0, 1.0/255.0}; 
+    Ipp32f scaleFactor[3] = {255.0, 255.0, 255.0}; 
 
-    //Compute the step in bytes of the dst norm and dest data
-    int dstStep = srcImage.size().width * srcImage.channels() * sizeof(Ipp32f); 
-    int dstNormStep = srcImage.size().width * srcImage.channels() * sizeof(Ipp8u);
-
-    Ipp8u *pIppInputImage = (Ipp8u*)&srcImage.data[0];  //Get pointer to image data
-    Ipp32f *pIpp32fImage = NULL;                        //Pointer to 32f converted image  
-    Ipp8u *pIpp8uNormImage = NULL;                  //Pointer to 8u normalized image 
-
+    
     //The input image has to be normalized and single precission float type
-    ippiConvert_8u32f_C3R(pIppInputImage, srcImage.step, pIpp32fImage, dstStep, roi);
-    ippiMulC_32f_C3IR(scaleFactor, pIpp32fImage, dstStep, roi);
+    ippiConvert_8u32f_C3R(pSrcImage, srcImage.step, pIpp32fImage, 32fStep, roi);
+    ippiMulC_32f_C3IR(normFactor, pIpp32fImage, 32fStep, roi);
 
     //Mat L = this->nal.noAdaptiveLaplacian(Unorm, lambda);
     //Mat F = this->nlmfd.DNLMFilter(Unorm, L, wSize, wSize_n, sigma_s, sigma_r);
 
     //putting back everything
-    ippiConvert_32f8u_C3R(pIpp32fImage, dstStep, pIpp8uNormImage, outputImage.step, roi, ippRndNear);
-    ippiMulC_8u_C3RSfs(const Ipp<datatype>* pSrc, int srcStep, const Ipp<datatype> value[3], Ipp<datatype>* pDst, int dstStep, IppiSize roiSize, int scaleFactor);
-    (Ipp8u*)&outputImage.data[0],
+    ippiMulC_32f_C3IR(scaleFactor, pIpp32fImage, 32fStep, roi);
+    ippiConvert_32f8u_C1R(pIpp32fImage, 32fStep, pDstImage , outputImage.step, roi);
+    
+    ippiFree(pIpp32fImage);
+
     return F;
 }
