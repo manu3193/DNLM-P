@@ -1,37 +1,11 @@
-/*
-// Copyright 2015 2016 Intel Corporation All Rights Reserved.
-//
-// The source code, information and material ("Material") contained herein is
-// owned by Intel Corporation or its suppliers or licensors, and title
-// to such Material remains with Intel Corporation or its suppliers or
-// licensors. The Material contains proprietary information of Intel
-// or its suppliers and licensors. The Material is protected by worldwide
-// copyright laws and treaty provisions. No part of the Material may be used,
-// copied, reproduced, modified, published, uploaded, posted, transmitted,
-// distributed or disclosed in any way without Intel's prior express written
-// permission. No license under any patent, copyright or other intellectual
-// property rights in the Material is granted to or conferred upon you,
-// either expressly, by implication, inducement, estoppel or otherwise.
-// Any license under such intellectual property rights must be express and
-// approved by Intel in writing.
-//
-// Unless otherwise agreed by Intel in writing,
-// you may not remove or alter this notice or any other notice embedded in
-// Materials by Intel or Intel's suppliers or licensors in any way.
-*/
 
-//   A simple example of performing filtering an image using a general integer rectangular kernel
-// implemented with Intel IPP functions:
-//     ippiFilterBorderGetSize
-//     ippiFilterBorderInit_16s
-//     ippiFilterBorder_8u_C1R
 
 
 #include <stdio.h>
 #include "ipp.h"
 
-#define WIDTH  128  /* image width */
-#define HEIGHT  64  /* image height */
+#define WIDTH  1920  /* image width */
+#define HEIGHT  1080  /* image height */
 const Ipp16s kernel[3*3] = {-1/8, -1/8, -1/8, -1/8, 16/8, -1/8, -1/8, -1/8, -1/8}; // Define high pass filter
 
 /* Next two defines are created to simplify code reading and understanding */
@@ -43,34 +17,66 @@ const Ipp16s kernel[3*3] = {-1/8, -1/8, -1/8, -1/8, 16/8, -1/8, -1/8, -1/8, -1/8
 int main(void)
 {
     IppStatus status = ippStsNoErr;
-    Ipp8u* pSrc = NULL, *pDst = NULL;     /* Pointers to source/destination images */
-    int srcStep = 0, dstStep = 0;         /* Steps, in bytes, through the source/destination images */
-    IppiSize roiSize = { WIDTH, HEIGHT }; /* Size of source/destination ROI in pixels */
+    Ipp32f *pIpp32fImage = NULL, *pFilteredImage = NULL;
+    Ipp8u *pSrcImage = NULL, *pOutputImage = NULL;
     IppiSize  kernelSize = { 3, 3 };
-    Ipp8u *pBuffer = NULL;                /* Pointer to the work buffer */
+    Ipp32f *pBuffer = NULL;                /* Pointer to the work buffer */
     IppiFilterBorderSpec* pSpec = NULL;   /* context structure */
     int iTmpBufSize = 0, iSpecSize = 0;   /* Common work buffer size */
     IppiBorderType borderType = ippBorderRepl;
     Ipp8u borderValue = 0;
     int numChannels = 1;
 
-    pSrc = ippiMalloc_8u_C1(roiSize.width, roiSize.height, &srcStep);
-    pDst = ippiMalloc_8u_C1(roiSize.width, roiSize.height, &dstStep);
+    //Variables used for image format conversion
+    IppiSize roi;
+    roi.width = WIDTH;
+    roi.height = HEIGHT;
 
-    check_sts( status = ippiFilterBorderGetSize(kernelSize, roiSize, ipp8u, ipp16s, numChannels, &iSpecSize, &iTmpBufSize) )
+    //Compute the step in bytes of the 8u and 32f image
+    //int 8uStep = roi.width * sizeof(Ipp8u); 
+    //int 32fStep = roi.width * sizeof(Ipp32f);
+    int 8uStep = 0; 
+    int 32fStep = 0;
+
+    //Get pointers to data
+    pSrcImage = ippiMalloc_8u_C1(roi.width, roi.height, &8uStep);   //Get pointer to src image data 
+    pIpp32fImage = ippiMalloc_32f_C1(roi.width, roi.height, &32fStep);  //Allocate buffer for converted image 
+    pFilteredImage = ippiMalloc_32f_C1(roi.width, roi.height, &32fStep);  //Allocate buffer for converted image 
+    pOutputImage = ippiMalloc_8u_C1(roi.width, roi.height, &8uStep);
+        
+    //Scale factor to normalize 32f image
+    Ipp32f normFactor[3] = {1.0/255.0, 1.0/255.0, 1.0/255.0}; 
+    Ipp32f scaleFactor[3] = {255.0, 255.0, 255.0}; 
+
+    
+    //The input image has to be normalized and single precission float type
+    check_sts( status = ippiConvert_8u32f_C3R(pSrcImage, 8uStep, pIpp32fImage, 32fStep, roi) )
+    check_sts( status = ippiMulC_32f_C3IR(normFactor, pIpp32fImage, 32fStep, roi) )
+
+    //aplying high pass filter
+
+    check_sts( status = ippiFilterBorderGetSize(kernelSize, roi, ipp32f, ipp32f, numChannels, &iSpecSize, &iTmpBufSize) )
 
     pSpec = (IppiFilterBorderSpec *)ippsMalloc_8u(iSpecSize);
-    pBuffer = ippsMalloc_8u(iTmpBufSize);
+    pBuffer = ippsMalloc_32f(iTmpBufSize);
 
-    check_sts( status = ippiFilterBorderInit_16s(kernel, kernelSize, 4, ipp8u, numChannels, ippRndNear, pSpec) )
+    check_sts( status = ippiFilterBorderInit_32f(kernel, kernelSize, 1, ipp32f, numChannels, ippRndNear, pSpec) )
 
-    check_sts( status = ippiFilterBorder_8u_C1R(pSrc, srcStep, pDst, dstStep, roiSize, borderType, &borderValue, pSpec, pBuffer) )
+    check_sts( status = ippiFilterBorder_32f_C1R(pIpp32fImage, 32fStep, pFilteredImage, 32fStep, roi, borderType, &borderValue, pSpec, pBuffer) )
+
+    //putting back everything
+    check_sts( status = ippiMulC_32f_C3IR(scaleFactor, pFilteredImage, 32fStep, roi) )
+    check_sts( status = ippiConvert_32f8u_C1R(pFilteredImage, 32fStep, pOutputImage , 8uStep, roi) )
+    
+    
 
 EXIT_MAIN
     ippsFree(pBuffer);
     ippsFree(pSpec);
-    ippiFree(pSrc);
-    ippiFree(pDst);
+    ippiFree(pSrcImage);
+    ippiFree(pIpp32fImage);
+    ippiFree(pFilteredImage);
+    ippiFree(pOutputImage);
     printf("Exit status %d (%s)\n", (int)status, ippGetStatusString(status));
     return (int)status;
 }
