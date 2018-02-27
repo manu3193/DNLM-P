@@ -60,7 +60,7 @@ int main(void)
     pSpec = (IppiFilterBorderSpec *)ippsMalloc_8u(iSpecSize);
     pBuffer = ippsMalloc_32f(iTmpBufSize);
 
-    check_sts( status = ippiFilterBorderInit_32f(kernel, kernelSize, 1, ipp32f, numChannels, ippRndNear, pSpec) )
+    check_sts( status = ippiFilterBorderInit_32f(kernel, kernelSize, ipp32f, numChannels, ippRndNear, pSpec) )
 
     check_sts( status = ippiFilterBorder_32f_C1R(pIpp32fImage, 32fStep, pFilteredImage, 32fStep, roi, borderType, &borderValue, pSpec, pBuffer) )
 
