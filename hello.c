@@ -6,7 +6,7 @@
 
 #define WIDTH  1920  /* image width */
 #define HEIGHT  1080  /* image height */
-const Ipp16s kernel[3*3] = {-1/8, -1/8, -1/8, -1/8, 16/8, -1/8, -1/8, -1/8, -1/8}; // Define high pass filter
+const Ipp32f kernel[3*3] = {-1/8, -1/8, -1/8, -1/8, 16/8, -1/8, -1/8, -1/8, -1/8}; // Define high pass filter
 
 /* Next two defines are created to simplify code reading and understanding */
 #define EXIT_MAIN exitLine:                                  /* Label for Exit */
