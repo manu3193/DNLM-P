@@ -33,16 +33,16 @@ int main(void)
     roi.height = HEIGHT;
 
     //Compute the step in bytes of the 8u and 32f image
-    //int 8uStep = roi.width * sizeof(Ipp8u); 
-    //int 32fStep = roi.width * sizeof(Ipp32f);
-    int 8uStep = 0; 
-    int 32fStep = 0;
+    //int stepSize8u = roi.width * sizeof(Ipp8u); 
+    //int stepSize32f = roi.width * sizeof(Ipp32f);
+    int stepSize8u = 0; 
+    int stepSize32f = 0;
 
     //Get pointers to data
-    pSrcImage = ippiMalloc_8u_C1(roi.width, roi.height, &8uStep);   //Get pointer to src image data 
-    pIpp32fImage = ippiMalloc_32f_C1(roi.width, roi.height, &32fStep);  //Allocate buffer for converted image 
-    pFilteredImage = ippiMalloc_32f_C1(roi.width, roi.height, &32fStep);  //Allocate buffer for converted image 
-    pOutputImage = ippiMalloc_8u_C1(roi.width, roi.height, &8uStep);
+    pSrcImage = ippiMalloc_8u_C1(roi.width, roi.height, &stepSize8u);   //Get pointer to src image data 
+    pIpp32fImage = ippiMalloc_32f_C1(roi.width, roi.height, &stepSize32f);  //Allocate buffer for converted image 
+    pFilteredImage = ippiMalloc_32f_C1(roi.width, roi.height, &stepSize32f);  //Allocate buffer for converted image 
+    pOutputImage = ippiMalloc_8u_C1(roi.width, roi.height, &stepSize8u);
         
     //Scale factor to normalize 32f image
     Ipp32f normFactor[3] = {1.0/255.0, 1.0/255.0, 1.0/255.0}; 
@@ -50,8 +50,8 @@ int main(void)
 
     
     //The input image has to be normalized and single precission float type
-    check_sts( status = ippiConvert_8u32f_C3R(pSrcImage, 8uStep, pIpp32fImage, 32fStep, roi) )
-    check_sts( status = ippiMulC_32f_C3IR(normFactor, pIpp32fImage, 32fStep, roi) )
+    check_sts( status = ippiConvert_8u32f_C3R(pSrcImage, stepSize8u, pIpp32fImage, stepSize32f, roi) )
+    check_sts( status = ippiMulC_32f_C3IR(normFactor, pIpp32fImage, stepSize32f, roi) )
 
     //aplying high pass filter
 
@@ -62,11 +62,11 @@ int main(void)
 
     check_sts( status = ippiFilterBorderInit_32f(kernel, kernelSize, ipp32f, numChannels, ippRndNear, pSpec) )
 
-    check_sts( status = ippiFilterBorder_32f_C1R(pIpp32fImage, 32fStep, pFilteredImage, 32fStep, roi, borderType, &borderValue, pSpec, pBuffer) )
+    check_sts( status = ippiFilterBorder_32f_C1R(pIpp32fImage, stepSize32f, pFilteredImage, stepSize32f, roi, borderType, &borderValue, pSpec, pBuffer) )
 
     //putting back everything
-    check_sts( status = ippiMulC_32f_C3IR(scaleFactor, pFilteredImage, 32fStep, roi) )
-    check_sts( status = ippiConvert_32f8u_C1R(pFilteredImage, 32fStep, pOutputImage , 8uStep, roi) )
+    check_sts( status = ippiMulC_32f_C3IR(scaleFactor, pFilteredImage, stepSize32f, roi) )
+    check_sts( status = ippiConvert_32f8u_C1R(pFilteredImage, stepSize32f, pOutputImage , stepSize8u, roi) )
     
     
 
