@@ -24,7 +24,7 @@ int main(void)
     IppiFilterBorderSpec* pSpec = NULL;   /* context structure */
     int iTmpBufSize = 0, iSpecSize = 0;   /* Common work buffer size */
     IppiBorderType borderType = ippBorderRepl;
-    Ipp32f borderValue = 0.0    ;
+    Ipp32f borderValue = 0.0;
     int numChannels = 1;
 
     //Variables used for image format conversion
@@ -57,7 +57,7 @@ int main(void)
 
     check_sts( status = ippiFilterBorderGetSize(kernelSize, roi, ipp32f, ipp32f, numChannels, &iSpecSize, &iTmpBufSize) )
 
-    pSpec = (IppiFilterBorderSpec *)ippsMalloc_32f(iSpecSize);
+    pSpec = (IppiFilterBorderSpec *)ippsMalloc_8u(iSpecSize);
     pBuffer = ippsMalloc_32f(iTmpBufSize);
 
     check_sts( status = ippiFilterBorderInit_32f(kernel, kernelSize, ipp32f, numChannels, ippRndNear, pSpec) )
