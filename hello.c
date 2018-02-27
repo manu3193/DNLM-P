@@ -75,7 +75,7 @@ int main(void)
     check_sts( status = ippiMulC_32f_C3IR(scaleFactor, pFilteredImage, stepSize32f, roi) )
     printf("Converting image back to 8u\n");
     check_sts( status = ippiConvert_32f8u_C1R(pFilteredImage, stepSize32f, pOutputImage , stepSize8u, roi, ippRndNear) )
-    
+    printf("Done..\n");
     
 
 EXIT_MAIN
