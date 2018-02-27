@@ -38,6 +38,8 @@ int main(void)
     int stepSize8u = 0; 
     int stepSize32f = 0;
 
+    printf("Allocating image buffers\n");
+
     //Get pointers to data
     pSrcImage = ippiMalloc_8u_C1(roi.width, roi.height, &stepSize8u);   //Get pointer to src image data 
     pIpp32fImage = ippiMalloc_32f_C1(roi.width, roi.height, &stepSize32f);  //Allocate buffer for converted image 
@@ -49,23 +51,29 @@ int main(void)
     Ipp32f scaleFactor[3] = {255.0, 255.0, 255.0}; 
 
     
+    printf("Converting image to 32f\n"); 
     //The input image has to be normalized and single precission float type
     check_sts( status = ippiConvert_8u32f_C3R(pSrcImage, stepSize8u, pIpp32fImage, stepSize32f, roi) )
+    printf("Normalizing image to get values from 0 to 1\n");
     check_sts( status = ippiMulC_32f_C3IR(normFactor, pIpp32fImage, stepSize32f, roi) )
 
     //aplying high pass filter
-
+    printf("Calculating filter buffer size\n");
     check_sts( status = ippiFilterBorderGetSize(kernelSize, roi, ipp32f, ipp32f, numChannels, &iSpecSize, &iTmpBufSize) )
 
+    printf("Allocating filter buffer and specification\n");
     pSpec = (IppiFilterBorderSpec *)ippsMalloc_8u(iSpecSize);
     pBuffer = ippsMalloc_32f(iTmpBufSize);
 
+    printf("Initializing filter\n");
     check_sts( status = ippiFilterBorderInit_32f(kernel, kernelSize, ipp32f, numChannels, ippRndNear, pSpec) )
-
+    printf("Applying filter\n");
     check_sts( status = ippiFilterBorder_32f_C1R(pIpp32fImage, stepSize32f, pFilteredImage, stepSize32f, roi, borderType, &borderValue, pSpec, pBuffer) )
 
     //putting back everything
+    printf("Denormalizing image\n");
     check_sts( status = ippiMulC_32f_C3IR(scaleFactor, pFilteredImage, stepSize32f, roi) )
+    printf("Converting image back to 8u\n");
     check_sts( status = ippiConvert_32f8u_C1R(pFilteredImage, stepSize32f, pOutputImage , stepSize8u, roi, ippRndNear) )
     
     
