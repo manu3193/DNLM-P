@@ -66,7 +66,7 @@ int main(void)
 
     //putting back everything
     check_sts( status = ippiMulC_32f_C3IR(scaleFactor, pFilteredImage, stepSize32f, roi) )
-    check_sts( status = ippiConvert_32f8u_C1R(pFilteredImage, stepSize32f, pOutputImage , stepSize8u, roi) )
+    check_sts( status = ippiConvert_32f8u_C1R(pFilteredImage, stepSize32f, pOutputImage , stepSize8u, roi, ippRndNear) )
     
     
 
