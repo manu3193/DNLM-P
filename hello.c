@@ -79,11 +79,17 @@ int main(void)
     
 
 EXIT_MAIN
+    printf("Freeing pBuffer..\n");
     ippsFree(pBuffer);
+    printf("Freeing pSpec..\n");
     ippsFree(pSpec);
+    printf("Freeing pSrcImage..\n");
     ippiFree(pSrcImage);
+    printf("Freeing pIpp32fImage..\n");
     ippiFree(pIpp32fImage);
+    printf("Freeing pFilteredImage..\n");
     ippiFree(pFilteredImage);
+    printf("Freeing pOutputImage..\n");
     ippiFree(pOutputImage);
     printf("Exit status %d (%s)\n", (int)status, ippGetStatusString(status));
     return (int)status;
