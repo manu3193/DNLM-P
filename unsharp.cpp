@@ -68,7 +68,7 @@ int main(int, char**)
     pBuffer = ippsMalloc_8u(iTmpBufSize);
 
     printf("Initializing filter\n");
-    check_sts( status = ippiFilterBorderInit_32f(kernel, kernelSize, ipp32f, numChannels, ippRndNear, pSpec) )
+    check_sts( status = ippiFilterBorderInit_32f(kernel, kernelSize, ipp32f, numChannels, ippRndFinancial, pSpec) )
     printf("Applying filter\n");
     check_sts( status = ippiFilterBorder_32f_C1R(pIpp32fImage, stepSize32f, pFilteredImage, stepSize32f, roi, borderType, &borderValue, pSpec, pBuffer) )
 
@@ -76,7 +76,7 @@ int main(int, char**)
     printf("Denormalizing image\n");
     check_sts( status = ippiMulC_32f_C1IR(scaleFactor, pFilteredImage, stepSize32f, roi) )
     printf("Converting image back to 8u\n");
-    check_sts( status = ippiConvert_32f8u_C1R(pFilteredImage, stepSize32f, pOutputImage , outputImage.step[0], roi, ippRndNear) )
+    check_sts( status = ippiConvert_32f8u_C1R(pFilteredImage, stepSize32f, pOutputImage , outputImage.step[0], roi, ippRndFinancial) )
     printf("Done..\n");
     imwrite("lena_sharp.bmp", outputImage);
     
