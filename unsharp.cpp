@@ -49,15 +49,15 @@ int main(int, char**)
     pOutputImage = (Ipp8u*)&outputImage.data[0];
         
     //Scale factor to normalize 32f image
-    Ipp32f normFactor[3] = {1.0/255.0, 1.0/255.0, 1.0/255.0}; 
-    Ipp32f scaleFactor[3] = {255.0, 255.0, 255.0}; 
+    Ipp32f normFactor = 1.0/255.0; 
+    Ipp32f scaleFactor = 255.0; 
 
     
     printf("Converting image to 32f\n"); 
     //The input image has to be normalized and single precission float type
     check_sts( status = ippiConvert_8u32f_C3R(pSrcImage, inputImage.step[0], pIpp32fImage, stepSize32f, roi) )
     printf("Normalizing image to get values from 0 to 1\n");
-    check_sts( status = ippiMulC_32f_C3IR(normFactor, pIpp32fImage, stepSize32f, roi) )
+    check_sts( status = ippiMulC_32f_C1IR(normFactor, pIpp32fImage, stepSize32f, roi) )
 
     //aplying high pass filter
     printf("Calculating filter buffer size\n");
@@ -74,7 +74,7 @@ int main(int, char**)
 
     //putting back everything
     printf("Denormalizing image\n");
-    check_sts( status = ippiMulC_32f_C3IR(scaleFactor, pFilteredImage, stepSize32f, roi) )
+    check_sts( status = ippiMulC_32f_C1IR(scaleFactor, pFilteredImage, stepSize32f, roi) )
     printf("Converting image back to 8u\n");
     check_sts( status = ippiConvert_32f8u_C1R(pFilteredImage, stepSize32f, pOutputImage , outputImage.step[0], roi, ippRndNear) )
     printf("Done..\n");
@@ -85,7 +85,7 @@ EXIT_MAIN
     printf("Freeing memory..\n");
     ippsFree(pBuffer);
     ippsFree(pSpec);
-    ippiFree(pIpp32fImage); //Dont know why freeing the memory pointed by pIpp32fImage gives segfault
+    //ippiFree(pIpp32fImage); //Dont know why freeing the memory pointed by pIpp32fImage gives segfault
     ippiFree(pFilteredImage);
     printf("Exit status %d (%s)\n", (int)status, ippGetStatusString(status));
     return (int)status;
