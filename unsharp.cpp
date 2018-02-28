@@ -78,7 +78,7 @@ int main(int, char**)
     printf("Converting image back to 8u\n");
     check_sts( status = ippiConvert_32f8u_C1R(pFilteredImage, stepSize32f, pOutputImage , outputImage.step[0], roi, ippRndNear) )
     printf("Done..\n");
-    imwrite("lena_sharp.bmp", pOutputImage);
+    imwrite("lena_sharp.bmp", outputImage);
     
 
 EXIT_MAIN
