@@ -85,6 +85,6 @@ EXIT_MAIN
     ippiFree(pIpp32fImage);
     ippiFree(pFilteredImage);
     ippiFree(pOutputImage);
-    printf("Exit status %d (%s)\n", (int)status, ippGetStatusString(status));
-    return (int)status;
+    //printf("Exit status %d (%s)\n", (int)status, ippGetStatusString(status));
+    return 1;//(int)status;
 }
