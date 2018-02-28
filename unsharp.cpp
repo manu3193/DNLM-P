@@ -45,7 +45,7 @@ int main(int, char**)
     pIpp32fImage = ippiMalloc_32f_C1(roi.width, roi.height, &stepSize32f);  //Allocate buffer for converted image 
     pFilteredImage = ippiMalloc_32f_C1(roi.width, roi.height, &stepSize32f);  //Allocate buffer for converted image 
     //Get pointer to cv::Mat data 
-    pSrcImage = (Ipp8u*)&inputImage.data[0]   
+    pSrcImage = (Ipp8u*)&inputImage.data[0];   
     pOutputImage = (Ipp8u*)&outputImage.data[0];
         
     //Scale factor to normalize 32f image
