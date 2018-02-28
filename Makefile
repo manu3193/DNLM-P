@@ -12,7 +12,7 @@ CC = icc
 CFLAGS = -g -qopenmp -O3 -xmic-avx512  -fma -align -finline-functions
 LIBS = -lippi -lippcc -lipps -lippvm  -lippcore
 
-LDFLAGS =-g3 -Wall
+LDFLAGS =-g3 -Wall #-qopt-report=2 -qopt-report-phase=vec
 # define any directories containing header files other than /usr/include
 #
 INCLUDES= -I$(IPPROOT)/include
