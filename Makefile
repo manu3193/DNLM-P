@@ -9,7 +9,7 @@ IPP_IW_LIBS_PATH = $(IPP_IW_ROOT)/lib/intel64
 # define the C compiler to use
 CC = icc
 # define any compile-time flags
-CFLAGS = -g -qopenmp -O2 -xmic-avx512  -fma -align -finline-functions
+CFLAGS = -g -qopenmp -O3 -xmic-avx512  -fma -align -finline-functions
 LIBS = -lippi -lippcc -lipps -lippvm  -lippcore
 
 LDFLAGS =-g3 -Wall
