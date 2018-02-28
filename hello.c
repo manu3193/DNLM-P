@@ -20,7 +20,7 @@ int main(void)
     Ipp32f *pIpp32fImage = NULL, *pFilteredImage = NULL;
     Ipp8u *pSrcImage = NULL, *pOutputImage = NULL;
     IppiSize  kernelSize = { 3, 3 };
-    Ipp32f *pBuffer = NULL;                /* Pointer to the work buffer */
+    Ipp8u *pBuffer = NULL;                /* Pointer to the work buffer */
     IppiFilterBorderSpec* pSpec = NULL;   /* context structure */
     int iTmpBufSize = 0, iSpecSize = 0;   /* Common work buffer size */
     IppiBorderType borderType = ippBorderRepl;
@@ -63,7 +63,7 @@ int main(void)
 
     printf("Allocating filter buffer and specification\n");
     pSpec = (IppiFilterBorderSpec *)ippsMalloc_8u(iSpecSize);
-    pBuffer = ippsMalloc_32f(iTmpBufSize);
+    pBuffer = ippsMalloc_8u(iTmpBufSize);
 
     printf("Initializing filter\n");
     check_sts( status = ippiFilterBorderInit_32f(kernel, kernelSize, ipp32f, numChannels, ippRndNear, pSpec) )
