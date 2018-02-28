@@ -19,7 +19,7 @@ INCLUDES= -I$(IPPROOT)/include
 
 
 # define the C source files
-SRCS = hello.c
+SRCS = unsharp.cpp
 
 # define the C object files
 #
@@ -32,7 +32,7 @@ SRCS = hello.c
 OBJS = $(SRCS:.c=.o)
 
 # define the executable file
-MAIN = hello
+MAIN = unsharp
 
 #
 # The following part of the makefile is generic; it can be used to
