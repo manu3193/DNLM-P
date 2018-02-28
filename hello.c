@@ -79,17 +79,12 @@ int main(void)
     
 
 EXIT_MAIN
-    printf("Freeing pBuffer..\n");
+    printf("Freeing memory..\n");
     ippsFree(pBuffer);
-    printf("Freeing pSpec..\n");
     ippsFree(pSpec);
-    printf("Freeing pSrcImage..\n");
     ippiFree(pSrcImage);
-    printf("Freeing pIpp32fImage..\n");
-    ippiFree(pIpp32fImage);
-    printf("Freeing pFilteredImage..\n");
+    //ippiFree(pIpp32fImage); //Dont know why freeing the memory pointed by pIpp32fImage gives segfault
     ippiFree(pFilteredImage);
-    printf("Freeing pOutputImage..\n");
     ippiFree(pOutputImage);
     printf("Exit status %d (%s)\n", (int)status, ippGetStatusString(status));
     return (int)status;
