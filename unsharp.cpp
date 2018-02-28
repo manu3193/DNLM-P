@@ -35,7 +35,7 @@ int main(int, char**)
     int stepSize32f = 0;
 
     //Loading image
-    inputImage = imread('lena.bmp', IMREAD_GRAYSCALE);
+    inputImage = imread("lena.bmp", IMREAD_GRAYSCALE);
     //The output image has the same shape of the input one
     outputImage = inputImage.clone();
 
@@ -78,7 +78,7 @@ int main(int, char**)
     printf("Converting image back to 8u\n");
     check_sts( status = ippiConvert_32f8u_C1R(pFilteredImage, stepSize32f, pOutputImage , outputImage.step[0], roi, ippRndNear) )
     printf("Done..\n");
-    imread('lena_sharp.bmp', pOutputImage);
+    imwrite("lena_sharp.bmp", pOutputImage);
     
 
 EXIT_MAIN
