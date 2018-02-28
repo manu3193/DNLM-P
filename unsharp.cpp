@@ -1,67 +1,92 @@
-#include "iw++/iw.hpp"
 #include <ipp.h>
-#include <omp.h>
+#include <stdio.h>
+#include <opencv2/opencv.hpp>
+
+#define WIDTH  1920  /* image width */
+#define HEIGHT  1080  /* image height */
+const Ipp32f kernel[3*3] = {-1/8, -1/8, -1/8, -1/8, 16/8, -1/8, -1/8, -1/8, -1/8}; // Define high pass filter
+
+/* Next two defines are created to simplify code reading and understanding */
+#define EXIT_MAIN exitLine:                                  /* Label for Exit */
+#define check_sts(st) if((st) != ippStsNoErr) goto exitLine; /* Go to Exit if IPP function returned status different from ippStsNoErr */
+
+using namespace cv; 
 
 int main(int, char**)
 {
-    // Create images
-    ipp::IwiImage srcImage, cvtImage, dstImage;
-    srcImage.Alloc(ipp::IwiSize(320, 240), ipp8u, 3);
-    cvtImage.Alloc(srcImage.m_size, ipp8u, 1);
-    dstImage.Alloc(srcImage.m_size, ipp16s, 1);
+    IppStatus status = ippStsNoErr;
+    Ipp32f *pIpp32fImage = NULL, *pFilteredImage = NULL;
+    Ipp8u *pSrcImage = NULL, *pOutputImage = NULL;
+    Mat inputImage, outputImage;
+    IppiSize  kernelSize = { 3, 3 };
+    Ipp8u *pBuffer = NULL;                /* Pointer to the work buffer */
+    IppiFilterBorderSpec* pSpec = NULL;   /* context structure */
+    int iTmpBufSize = 0, iSpecSize = 0;   /* Common work buffer size */
+    IppiBorderType borderType = ippBorderRepl;
+    Ipp32f borderValue = 0.0;
+    int numChannels = 1;
 
-    int            threads = omp_get_max_threads(); // Get threads number
-    ipp::IwiSize   tileSize(dstImage.m_size.width, (dstImage.m_size.height + threads - 1)/threads); // One tile per thread
-    IppiSize       kernelSize = {3, 3};
-    IppiBorderSize borderSize = iwiSizeToBorderSize(iwiMaskToSize(ippMskSize3x3)); // Convert kernel size to border size
+    //Variables used for image format conversion
+    IppiSize roi;
+    roi.width = WIDTH;
+    roi.height = HEIGHT;
 
-    const Ipp16s   kernel[3*3] = {-1/8, -1/8, -1/8, -1/8, 16/8, -1/8, -1/8, -1/8, -1/8}; // Define high pass filter
-    int   numberChannels = 1; //Number of channels of the cvt and src tile
+    //Step in bytes of 32f image
+    int stepSize32f = 0;
 
+    //Loading image
+    inputImage = imread('lena.bmp', IMREAD_GRAYSCALE);
+    //The output image has the same shape of the input one
+    outputImage = inputImage.clone();
 
-    #pragma omp parallel num_threads(threads)
-    {
-        // Declare thread-scope variables
-        IppiBorderType        border;
-        ipp::IwiImage         srcTile, cvtTile, dstTile;
-        int                   filterBufferSize = 0, filterSpecSize = 0; // Size of the work buffer and filter specification structure required for filtering
-        int                   srcStep = 0, dstStep = 0; //Steps in bytes through src and dst images
-        IppiFilterBorderSpec  *pFilterSpec = NULL;   //Filter specification context structure
-        Ipp16s                *pFilterBuffer = NULL; //Filter pointer to buffer
+    printf("Allocating image buffers\n");
 
-        // Color convert threading
-        #pragma omp for
-        for(IppSizeL row = 0; row < dstImage.m_size.height; row += tileSize.height)
-        {
-            ipp::IwiRect tile(0, row, tileSize.width, tileSize.height); // Create actual tile rectangle
+    //Get pointers to data
+    pIpp32fImage = ippiMalloc_32f_C1(roi.width, roi.height, &stepSize32f);  //Allocate buffer for converted image 
+    pFilteredImage = ippiMalloc_32f_C1(roi.width, roi.height, &stepSize32f);  //Allocate buffer for converted image 
+    //Get pointer to cv::Mat data 
+    pSrcImage = (Ipp8u*)&inputImage.data[0]   
+    pOutputImage = (Ipp8u*)&outputImage.data[0];
+        
+    //Scale factor to normalize 32f image
+    Ipp32f normFactor[3] = {1.0/255.0, 1.0/255.0, 1.0/255.0}; 
+    Ipp32f scaleFactor[3] = {255.0, 255.0, 255.0}; 
 
-            // Get images for current ROI
-            srcTile = srcImage.GetRoiImage(tile);
-            cvtTile = cvtImage.GetRoiImage(tile);
+    
+    printf("Converting image to 32f\n"); 
+    //The input image has to be normalized and single precission float type
+    check_sts( status = ippiConvert_8u32f_C3R(pSrcImage, inputImage.step[0], pIpp32fImage, stepSize32f, roi) )
+    printf("Normalizing image to get values from 0 to 1\n");
+    check_sts( status = ippiMulC_32f_C3IR(normFactor, pIpp32fImage, stepSize32f, roi) )
 
-            // Run functions
-            ipp::iwiColorConvert(&srcTile, iwiColorRGB, &cvtTile, iwiColorGray);
-        }
+    //aplying high pass filter
+    printf("Calculating filter buffer size\n");
+    check_sts( status = ippiFilterBorderGetSize(kernelSize, roi, ipp32f, ipp32f, numChannels, &iSpecSize, &iTmpBufSize) )
 
-        // Sobel threading
-        #pragma omp for
-        for(IppSizeL row = 0; row < dstImage.m_size.height; row += tileSize.height)
-        {
-            ipp::IwiRect tile(0, row, tileSize.width, tileSize.height); // Create actual tile rectangle
-            border = ipp::iwiRoi_GetTileBorder(ippBorderRepl, borderSize, cvtImage.m_size, tile); // Get actual tile border
-            ipp::iwiRoi_CorrectBordersOverlap(border, borderSize, cvtImage.m_size, &tile); // Check borders overlap and correct tile of necessary
+    printf("Allocating filter buffer and specification\n");
+    pSpec = (IppiFilterBorderSpec *)ippsMalloc_8u(iSpecSize);
+    pBuffer = ippsMalloc_8u(iTmpBufSize);
 
-            // Get images for current ROI
-            cvtTile = cvtImage.GetRoiImage(tile);
-            dstTile = dstImage.GetRoiImage(tile);
+    printf("Initializing filter\n");
+    check_sts( status = ippiFilterBorderInit_32f(kernel, kernelSize, ipp32f, numChannels, ippRndNear, pSpec) )
+    printf("Applying filter\n");
+    check_sts( status = ippiFilterBorder_32f_C1R(pIpp32fImage, stepSize32f, pFilteredImage, stepSize32f, roi, borderType, &borderValue, pSpec, pBuffer) )
 
-            // Run functions
-            //ipp::iwiFilterSobel(&cvtTile, &dstTile, iwiDerivHorFirst, ippMskSize3x3, border);
-            ippiFilterBorderGetSize(kernelSize, {dstTile.m_size.width, dstTile.m_size.height} , ipp16s, ipp16s, 1, &filterSpecSize, &filterBufferSize);
-            pFilterSpec = (IppiFilterBorderSpec *)ippsMalloc_16s(filterSpecSize);
-            pFilterBuffer = ippsMalloc_16s(filterBufferSize);
-            ippiFilterBorderInit_16s(kernel, kernelSize, 1, ipp8u, numberChannels, ippRndHintAccurate, pFilterSpec);
-            ippiFilterBorder_16s_C1R((Ipp16s *)cvtTile.m_ptr, srcStep,(Ipp16s *) dstTile.m_ptr, dstStep, {dstTile.m_size.width, dstTile.m_size.height}, border, 0, pFilterSpec, pFilterBuffer );
-        }
-    }
+    //putting back everything
+    printf("Denormalizing image\n");
+    check_sts( status = ippiMulC_32f_C3IR(scaleFactor, pFilteredImage, stepSize32f, roi) )
+    printf("Converting image back to 8u\n");
+    check_sts( status = ippiConvert_32f8u_C1R(pFilteredImage, stepSize32f, pOutputImage , outputImage.step[0], roi, ippRndNear) )
+    printf("Done..\n");
+    imread('lena_sharp.bmp', pOutputImage);
+    
+
+EXIT_MAIN
+    printf("Freeing memory..\n");
+    ippsFree(pBuffer);
+    ippsFree(pSpec);
+    ippiFree(pIpp32fImage); //Dont know why freeing the memory pointed by pIpp32fImage gives segfault
+    ippiFree(pFilteredImage);
+    printf("Exit status %d (%s)\n", (int)status, ippGetStatusString(status));
+    return (int)status;
 }
