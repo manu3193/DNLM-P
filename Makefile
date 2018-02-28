@@ -7,7 +7,7 @@ IPP_IW_ROOT = /home/mzumbado/lib/l_ippiw_p_2017.3.013/ippiw_2017_linux
 IPP_LIBS_PATH = $(IPPROOT)/lib/intel64
 IPP_IW_LIBS_PATH = $(IPP_IW_ROOT)/lib/intel64
 # define the C compiler to use
-CC = icc
+CC = icpc
 # define any compile-time flags
 CFLAGS = -g -qopenmp -O3 -xmic-avx512  -fma -align -finline-functions
 LIBS = -lippi -lippcc -lipps -lippvm  -lippcore `pkg-config --cflags --libs opencv`
