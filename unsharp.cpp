@@ -1,10 +1,12 @@
 #include <ipp.h>
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
+#include <timer.h>
 
 #define WIDTH  1920  /* image width */
 #define HEIGHT  1080  /* image height */
 const Ipp32f kernel[3*3] = {-1.0, -1.0, -1.0, -1.0, 8.0, -1.0, -1.0, -1.0, -1.0}; // Define high pass filter
+double elapsedTime;
 
 /* Next two defines are created to simplify code reading and understanding */
 #define EXIT_MAIN exitLine:                                  /* Label for Exit */
@@ -39,7 +41,7 @@ int main(int, char**)
     //The output image has the same shape of the input one
     outputImage = inputImage.clone();
 
-    printf("Allocating image buffers\n");
+    //Allocating image buffers
 
     //Get pointers to data
     pIpp32fImage = ippiMalloc_32f_C1(roi.width, roi.height, &stepSize32f);  //Allocate buffer for converted image 
@@ -53,32 +55,34 @@ int main(int, char**)
     Ipp32f scaleFactor = 255.0; 
 
     
-    printf("Converting image to 32f\n"); 
+    //Converting image to 32f
+    timerStart();
     //The input image has to be normalized and single precission float type
     check_sts( status = ippiConvert_8u32f_C3R(pSrcImage, inputImage.step[0], pIpp32fImage, stepSize32f, roi) )
-    printf("Normalizing image to get values from 0 to 1\n");
+    //Normalizing image to get values from 0 to 1
     check_sts( status = ippiMulC_32f_C1IR(normFactor, pIpp32fImage, stepSize32f, roi) )
 
     //aplying high pass filter
-    printf("Calculating filter buffer size\n");
+    //Calculating filter buffer size
     check_sts( status = ippiFilterBorderGetSize(kernelSize, roi, ipp32f, ipp32f, numChannels, &iSpecSize, &iTmpBufSize) )
 
-    printf("Allocating filter buffer and specification\n");
+    //Allocating filter buffer and specification
     pSpec = (IppiFilterBorderSpec *)ippsMalloc_8u(iSpecSize);
     pBuffer = ippsMalloc_8u(iTmpBufSize);
 
-    printf("Initializing filter\n");
+    //Initializing filter
     check_sts( status = ippiFilterBorderInit_32f(kernel, kernelSize, ipp32f, numChannels, ippRndFinancial, pSpec) )
-    printf("Applying filter\n");
+    //Applying filter
     check_sts( status = ippiFilterBorder_32f_C1R(pIpp32fImage, stepSize32f, pFilteredImage, stepSize32f, roi, borderType, &borderValue, pSpec, pBuffer) )
 
     //putting back everything
-    printf("Denormalizing image\n");
+    //Denormalizing image
     check_sts( status = ippiMulC_32f_C1IR(scaleFactor, pFilteredImage, stepSize32f, roi) )
-    printf("Converting image back to 8u\n");
+    //Converting image back to 8u\n
     check_sts( status = ippiConvert_32f8u_C1R(pFilteredImage, stepSize32f, pOutputImage , outputImage.step[0], roi, ippRndFinancial) )
-    printf("Done..\n");
+    elapsedTime = timerStop();
     imwrite("lena_sharp.bmp", outputImage);
+    printf("Elapsed time CV version:%d\n", elapsedTime);
     
 
 EXIT_MAIN

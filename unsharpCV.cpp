@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <opencv2/opencv.hpp>
+#include <timer.h>
 
 #define WIDTH  1920  /* image width */
 #define HEIGHT  1080  /* image height */
 const float kernel[3*3] = {-1.0, -1.0, -1.0, -1.0, 8.0, -1.0, -1.0, -1.0, -1.0}; // Define high pass filter
+double elapsedTime;
 
 
 using namespace cv; 
@@ -18,6 +20,7 @@ int main(int, char**)
     outputImage = inputImage.clone();
 
     printf("Converting image to 32f\n"); 
+    timerStart();
     //The input image has to be normalized and single precission float type
     inputImage.convertTo(floatMat, CV_32F, 1.0/255.0);
 
@@ -30,6 +33,7 @@ int main(int, char**)
     Mat filterResMat = Mat(floatMat.size(), floatMat.type());
     filter2D(floatMat, filterResMat, ddepth , kernel, anchor, delta, BORDER_REPLICATE );
     filterResMat.convertTo(outputImage, CV_8U, 255);
-
+    elapsedTime = timerStop();
     imwrite("lena_sharp.bmp", outputImage);
+    printf("Elapsed time IPP version: %d\n", elapsedTime );
 }
