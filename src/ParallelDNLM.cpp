@@ -47,9 +47,9 @@ Mat ParallelDNLM::processImage(const Mat& inputImage){
     //Set parameters for processing
     int wRSize = 7;
     int wSize_n=3;
-    double sigma_s = wRSize/1.5;
-    int sigma_r = 12; //13
-    double lambda = 5;
+    float sigma_s = wRSize/1.5;
+    float sigma_r = 12; //13
+    float lambda = 5.0;
     
     Mat fDeceivedNLM = filterDNLM(inputImage, wRSize, wSize_n, sigma_s, sigma_r, lambda);
 
@@ -57,42 +57,55 @@ Mat ParallelDNLM::processImage(const Mat& inputImage){
 }
 
 //Input image must be from 0 to 255
-Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, double sigma_s, int sigma_r, double lambda){
+Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, double sigma_s, float sigma_r, float lambda){
     
+    //Status variable helps to check for errors
+    IppStatus status = ippStsNoErr;
+
+    //Pointers to IPP type images 
+    Ipp8u *pSrcImage = NULL, *pDstImage = NULL;
+    Ipp32f *pSrc32fImage = NULL, *pUSMImage = NULL, *pFilteredImage= NULL;
+
+    //Variable to store 32f image step size in bytes 
+    int stepSize32f = 0;
+
+    //Scale factors to normalize and denormalize 32f image
+    Ipp32f normFactor = 1.0/255.0; 
+    Ipp32f scaleFactor = 255.0; 
+
+    //cv::Mat output filtered image
+    Mat outputImage = Mat(srcImage.size(), srcImage.type());
+
     //Variables used for image format conversion
     IppiSize roi;
     roi.width = srcImage.size().width;
     roi.height = srcImage.size().height;
 
-    //Compute the step in bytes of the 8u and 32f image
-    int 8uStep = roi.width * sizeof(Ipp8u); 
-    int 32fStep = roi.width * sizeof(Ipp32f);
+    //Get pointer to src and dst data
+    Ipp8u *pSrcImage = (Ipp8u*)&srcImage.data[0];                               
+    Ipp8u *pDstImage = (Ipp8u*)&outputImage.data[0];                            
 
-    //Allocate memory
-    Ipp8u *pSrcImage = (Ipp8u*)&srcImage.data[0];                               //Get pointer to src image data
-    Ipp32f *pIpp32fImage = ippiMalloc_32f_C1(roi.width, roi.height, &32fStep);  //Allocate buffer for converted image  
-    Ipp8u *pDstImage = (Ipp8u*)&outputImage.data[0];                            //Get buffer for output image 
-
-    //Create output image
-    Mat outputImage = srcImage.clone();
+    //Allocate memory for images
+    pSrc32fImage = ippiMalloc_32f_C1(roi.width, roi.height, &stepSize32f); 
+    pUSMImage = ippiMalloc_32f_C1(roi.width, roi.height, &stepSize32f);
+    pFilteredImage = ippiMalloc_32f_C1(roi.width, roi.height, &stepSize32f);   
     
-    //Scale factor to normalize 32f image
-    Ipp32f normFactor[3] = {1.0/255.0, 1.0/255.0, 1.0/255.0}; 
-    Ipp32f scaleFactor[3] = {255.0, 255.0, 255.0}; 
+    //Convert input image to 32f format
+    ippiConvert_8u32f_C1R(pSrcImage, srcImage.step[0], pSrc32fImage, stepSize32f, roi);
+    //Normalize converted image
+    ippiMulC_32f_C1IR(normFactor, pSrc32fImage, stepSize32f, roi);
 
-    
-    //The input image has to be normalized and single precission float type
-    ippiConvert_8u32f_C3R(pSrcImage, srcImage.step, pIpp32fImage, 32fStep, roi);
-    ippiMulC_32f_C3IR(normFactor, pIpp32fImage, 32fStep, roi);
-
-    //Mat L = this->nal.noAdaptiveLaplacian(Unorm, lambda);
-    //Mat F = this->nlmfd.DNLMFilter(Unorm, L, wSize, wSize_n, sigma_s, sigma_r);
+    //this->nal.noAdaptiveLaplacian(pSrc32fImage, pUSMImage, lambda);
+    //this->nlmfd.DNLMFilter(pSrc32fImage, pUSMImage, pFilteredImage, wSize, wSize_n, sigma_s, sigma_r);
 
     //putting back everything
-    ippiMulC_32f_C3IR(scaleFactor, pIpp32fImage, 32fStep, roi);
-    ippiConvert_32f8u_C1R(pIpp32fImage, 32fStep, pDstImage , outputImage.step, roi);
+    ippiMulC_32f_C3IR(scaleFactor, pFilteredImage, stepSize32f, roi);
+    ippiConvert_32f8u_C1R(pFilteredImage, stepSize32f, pDstImage , outputImage.step[0], roi, ippRndFinancial)
     
-    ippiFree(pIpp32fImage);
+    //Freeing memory
+    ippiFree(pSrc32fImage);
+    ippiFree(pUSMImage);
+    ippiFree(pFilteredImage);
 
-    return F;
+    return outputImage;
 }
