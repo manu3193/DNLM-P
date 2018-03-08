@@ -49,7 +49,7 @@ Mat ParallelDNLM::processImage(const Mat& inputImage){
     int wSize_n=3;
     double sigma_s = wRSize/1.5;
     int sigma_r = 12; //13
-    int lambda = 5;
+    double lambda = 5;
     
     Mat fDeceivedNLM = filterDNLM(inputImage, wRSize, wSize_n, sigma_s, sigma_r, lambda);
 
@@ -57,7 +57,7 @@ Mat ParallelDNLM::processImage(const Mat& inputImage){
 }
 
 //Input image must be from 0 to 255
-Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, double sigma_s, int sigma_r, int lambda){
+Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, double sigma_s, int sigma_r, double lambda){
     
     //Variables used for image format conversion
     IppiSize roi;

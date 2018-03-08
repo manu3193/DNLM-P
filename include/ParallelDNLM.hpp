@@ -18,6 +18,6 @@ public:
 private:
 	DNLMFilter dnlmFilter;
 	NoAdaptiveUSM noAdaptiveUSM;
-	Mat filterDNLM(const Mat& U, int wSize, int wSize_n, double sigma_s, int sigma_r, int lambda);
+	Mat filterDNLM(const Mat& U, int wSize, int wSize_n, double sigma_s, int sigma_r, double lambda);
 };
 #endif /* PARALLELDNLM_HPP_ */
