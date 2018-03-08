@@ -7,6 +7,7 @@
 #include <DNLMFilter.hpp>
 #include <NoAdaptiveUSM.hpp>
 
+using namespace cv;
 using namespace std;
 
 class ParallelDNLM{
