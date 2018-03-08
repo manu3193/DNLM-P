@@ -24,7 +24,8 @@ int main(int argc, char* argv[]){
 
     Mat inputImage, outputImage;
 
-    inputImage = imread(inputFile, CV_LOAD_IMAGE_COLOR);
+    //This version only works with grayscale images
+    inputImage = imread(inputFile, IMREAD_GRAYSCALE);
     //Check for errors when loading image
         if(!inputImage.data){
             cout << "Could not read image from file." << endl;
