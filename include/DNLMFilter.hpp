@@ -3,7 +3,7 @@
 #define DNLMFILTER_HPP_
 
 #include <iostream>
-#include <omp.h>
+
 
 using namespace cv;
 using namespace std;
