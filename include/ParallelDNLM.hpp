@@ -2,7 +2,7 @@
 #ifndef PARALLELDNLM_HPP_
 #define PARALLELDNLM_HPP_
 
-#include <string>
+#include <iostream>
 #include <DNLMFilter.hpp>
 #include <NoAdaptiveUSM.hpp>
 
