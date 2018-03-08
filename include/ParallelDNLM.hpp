@@ -12,7 +12,7 @@ public:
 	Mat processImage(const Mat& U);
 
 private:
-	DNLMFilter nlmfd;
+	DNLMFilter dnlmFilter;
 
 	Mat filterDNLM(const Mat& U, int wSize, int wSize_n, double sigma_s, int sigma_r, int lambda);
 };
