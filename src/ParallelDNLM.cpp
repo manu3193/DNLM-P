@@ -1,5 +1,6 @@
 
-#include <ParallelDeNLM.hpp>
+#include <ParallelDNLM.hpp>
+
 using namespace std;
   
 
