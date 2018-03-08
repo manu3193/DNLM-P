@@ -3,7 +3,9 @@
 #define PARALLELDNLM_HPP_
 
 #include <string>
-#include "DNLMFilter.hpp"
+#include <DNLMFilter.hpp>
+#include <NoAdaptiveUSM.hpp>
+
 using namespace std;
 
 class ParallelDNLM{
@@ -13,7 +15,7 @@ public:
 
 private:
 	DNLMFilter dnlmFilter;
-
+	NoAdaptiveUSM noAdaptiveUSM;
 	Mat filterDNLM(const Mat& U, int wSize, int wSize_n, double sigma_s, int sigma_r, int lambda);
 };
 #endif /* PARALLELDNLM_HPP_ */
