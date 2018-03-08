@@ -3,6 +3,7 @@
 #define PARALLELDNLM_HPP_
 
 #include <iostream>
+#include <string>
 #include <DNLMFilter.hpp>
 #include <NoAdaptiveUSM.hpp>
 
