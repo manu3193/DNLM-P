@@ -2,11 +2,6 @@
 
 
 
-int NoAdaptiveUSM::NoAdaptativeUSM(){
-	this->pKernel = NULL;
-	this->kernelStepSize = 0;
-	this->kernelSize = 0;
-}
 
 int NoAdaptiveUSM::noAdaptativeUSM(const Ipp32f* pSrc, Ipp32f* pDst, float lambda, IppiMaskSize mask){
 	
@@ -16,12 +11,22 @@ int NoAdaptiveUSM::noAdaptativeUSM(const Ipp32f* pSrc, Ipp32f* pDst, float lambd
 
 
 
-int NoAdaptiveUSM::generateLoGKernel(int size, float sigma, Ipp32f* pKernel ){
-	//Variables used to especify size of kernel
-    IppiSize roi;
-    roi.width = size;
-    roi.height = size;
-    //
-	//Allocate memory to store generated kernel
-	pKernel = ippiMalloc_32f_C1(roi.width, roi.height, &stepSize32f);
+int NoAdaptiveUSM::generateLoGKernel(int size, double sigma, Ipp32f* pKernel ){
+	
+	Ipp64f min, max, termSum;
+	int halfSize  = (size - 1) / 2;
+	int stepSize32f = 0;
+	Ipp64f std2 = (Ipp64f) sigma*sigma;
+
+	//Allocate memory for matrix to store (x*x + y*y) term. 
+	Ipp32f* radXY =  ippiMalloc_32f_C1(size, size, &stepSize32f);
+
+	for (int i = 0; i < size; ++i)
+	{
+		for (int j = 0; j < size; ++j)
+		{
+			radXY[i*stepSize32f + j] = (Ipp64f) ((i - halfSize) * (i - halfSize) + (j - halfSize) * (j - halfSize));
+		}
+	}
+
 }
