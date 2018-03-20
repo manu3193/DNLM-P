@@ -12,15 +12,9 @@ class NoAdaptiveUSM{
 
 public:
 	NoAdaptiveUSM();
-	~NoAdaptiveUSM();
-	void setMaskKernel(Ipp32f* pNewKernel);
-	void getMaskKernel(Ipp32f* pKernel);
+	int generateLoGKernel(int size, float sigma, Ipp32f* pKernel );
 	int noAdaptiveUSM(const Ipp32f* pSrc, Ipp32f* pDst, float lambda, IppiMaskSize mask);
 private:
-	Ipp32f* pKernel;
-	int kernelStepSize;
-	int kernelSize;
-	int generateLoGKernel(int size, float sigma, Ipp32f* pKernel );
 	
 };
 #endif /* NOADAPTIVEUSM_HPP_ */
