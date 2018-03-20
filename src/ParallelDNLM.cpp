@@ -57,7 +57,7 @@ Mat ParallelDNLM::processImage(const Mat& inputImage){
 }
 
 //Input image must be from 0 to 255
-Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, double sigma_s, float sigma_r, float lambda){
+Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float sigma_s, float sigma_r, float lambda){
     
     //Status variable helps to check for errors
     IppStatus status = ippStsNoErr;
