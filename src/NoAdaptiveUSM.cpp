@@ -5,6 +5,38 @@
 
 int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, Ipp32f* pDst, IppiSize roiSize, float lambda, int kernelLen){
 	
+	if (pSrc == NULL || pDst == NULL)
+	{
+		//ToDo better error handling
+		return -1;
+	}
+
+	IppStatus status = ippStsNoErr;
+	Ipp8u *pBuffer = NULL;                /* Pointer to the work buffer */
+    IppiFilterBorderSpec* pSpec = NULL;   /* context structure */
+    int iTmpBufSize = 0, iSpecSize = 0;   /* Common work buffer size */
+    IppiBorderType borderType = ippBorderRepl;
+    Ipp32f borderValue = 0.0;
+    //Apply USM only in L component of Lab colorspase. Working with grayscale at the momment. 
+    int numChannels = 1
+    //Step in bytes of 32f image
+    int stepSize32f = 0;
+
+    
+
+    //aplying high pass filter
+    //Calculating filter buffer size
+    status = ippiFilterBorderGetSize(kernelSize, roi, ipp32f, ipp32f, numChannels, &iSpecSize, &iTmpBufSize);
+
+    //Allocating filter buffer and specification
+    pSpec = (IppiFilterBorderSpec *)ippsMalloc_8u(iSpecSize);
+    pBuffer = ippsMalloc_8u(iTmpBufSize);
+
+    //Initializing filter
+    check_sts( status = ippiFilterBorderInit_32f(kernel, kernelSize, ipp32f, numChannels, ippRndFinancial, pSpec);
+    //Applying filter
+    status = ippiFilterBorder_32f_C1R(pIpp32fImage, stepSize32f, pFilteredImage, stepSize32f, roi, borderType, &borderValue, pSpec, pBuffer); 
+
 
 }
 
