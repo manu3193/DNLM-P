@@ -3,7 +3,7 @@
 
 
 
-int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, Ipp32f* pDst, IppiSize roiSize, float lambda,  int kernelLen){
+int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, Ipp32f* pDst, IppiSize roiSize, double sigma, float lambda,  int kernelLen){
 	
 	if (pSrc == NULL || pDst == NULL)
 	{
@@ -33,7 +33,7 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, Ipp32f* pDst, IppiSize roiS
     pFilteredAbsImage = ippiMalloc_32f_C1(roiSize.width, roiSize.height, &stepSize32f); 
 
     //Generate laplacian of gaussian kernel
-    int code =this->generateLoGKernel(kernelLen, std, pKernel);
+    int code =this->generateLoGKernel(kernelLen, sigma, pKernel);
 
     //Error handling
     if (code != 1)
