@@ -1,28 +1,25 @@
 #
-# 'make depend' uses makedepend to automatically generate dependencies 
-#               (dependencies are added to end of Makefile)
 # 'make'        build executable file 'mycc'
 # 'make clean'  removes all .o and executable files
 #
 
+IPP_LIBS_PATH = $(IPPROOT)/lib/intel64
 # define the C compiler to use
-CC = g++ -g
+CC = icpc
 # define any compile-time flags
-CFLAGS = -fopenmp
-LIBS = `pkg-config --libs opencv` -lopencv_highgui 
+CFLAGS = -g -qopenmp -O3 -xmic-avx512  -fma -align -finline-functions
+LIBS = -lippi -lippcc -lipps -lippvm  -lippcore `pkg-config --cflags --libs opencv`
 
-LDFLAGS = -g3 -Wall 
+LDFLAGS =-g3 -Wall #-qopt-report=2 -qopt-report-phase=vec
 # define any directories containing header files other than /usr/include
 #
-INCLUDES= -I../include -I/usr/local/include/opencv -I/usr/local/include/opencv2
-
-
+INCLUDES= -I../include -I$(IPPROOT)/include 
 
 
 # define the C source files
-SRCS = bfilterDeceived.cpp DNLMFilter.cpp  noAdaptiveLaplacian.cpp  parallelDeWAFF.cpp  tools.cpp
+SRCS =  NoAdaptiveUSM.cpp DNLMFilter.cpp ParallelDNLM.cpp
 
-# define the C object files 
+# define the C object files
 #
 # This uses Suffix Replacement within a macro:
 #   $(name:string1=string2)
@@ -32,41 +29,29 @@ SRCS = bfilterDeceived.cpp DNLMFilter.cpp  noAdaptiveLaplacian.cpp  parallelDeWA
 #
 OBJS = $(SRCS:.c=.o)
 
-# define the executable file 
-MAIN = mycc
+# define the executable file
+MAIN = dnlmfilter
 
 #
-# The following part of the makefile is generic; it can be used to 
+# The following part of the makefile is generic; it can be used to
 # build any executable just by changing the definitions above and by
 # deleting dependencies appended to the file from 'make depend'
 #
 
-.PHONY: depend clean
+.PHONY: clean
 
-all:
-	$(CC) $(OBJS) $(CFLAGS) $(INCLUDES) -o $(MAIN) $(LDFLAGS) $(LIBS)
+
+$(MAIN): $(OBJS) 
+	   $(CC) $(OBJS) $(CFLAGS) $(INCLUDES)  -o $@ $(LDFLAGS) $(LIBS)
+
 
 # this is a suffix replacement rule for building .o's from .c's
 # it uses automatic variables $<: the name of the prerequisite of
-# the rule(a .c file) and $@: the name of the target of the rule (a .o file) 
+# the rule(a .c file) and $@: the name of the target of the rule (a .o file)
 # (see the gnu make manual section about automatic variables)
-.c.o: $(CC) $(CFLAGS) $(INCLUDES) -c $<  -o $@
+.c.o:
+	 $(CC) -c $(CFLAGS) $(INCLUDES) $<
 
-clean: rm *.o *~ $(MAIN)
-
-depend: $(SRCS) makedepend $(INCLUDES) $^
-
-# DO NOT DELETE THIS LINE -- make depend needs it
-
-
-
-
-
-
-
-
-
-
-
-
+clean:
+	rm $(MAIN) $(OBJS)
 
