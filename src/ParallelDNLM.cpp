@@ -47,23 +47,24 @@ Mat ParallelDNLM::processImage(const Mat& inputImage){
     //Set parameters for processing
     int wRSize = 7;
     int wSize_n=3;
-    float sigma_s = wRSize/1.5;
     float sigma_r = 12; //13
     float lambda = 5.0;
+    int kernelLen = 7;
+    double kernelStd = 0.001;
     
-    Mat fDeceivedNLM = filterDNLM(inputImage, wRSize, wSize_n, sigma_s, sigma_r, lambda);
+    Mat fDeceivedNLM = filterDNLM(inputImage, wRSize, wSize_n, sigma_r, lambda, kernelLen, kernelStd);
 
     return fDeceivedNLM;
 }
 
 //Input image must be from 0 to 255
-Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float sigma_s, float sigma_r, float lambda){
+Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float sigma_r, float lambda, int kernelLen, double kernelStd){
     
     //Status variable helps to check for errors
     IppStatus status = ippStsNoErr;
 
     //Pointers to IPP type images 
-    Ipp32f *pSrc32fImage = NULL, *pUSMImage = NULL, *pFilteredImage= NULL;
+    Ipp32f *pSrc32fImage = NULL, *pUSMImage = NULL, *pFilteredImage= NULL, *pKernel= NULL;
 
     //Variable to store 32f image step size in bytes 
     int stepSize32f = 0;
@@ -87,14 +88,15 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     //Allocate memory for images
     pSrc32fImage = ippiMalloc_32f_C1(roi.width, roi.height, &stepSize32f); 
     pUSMImage = ippiMalloc_32f_C1(roi.width, roi.height, &stepSize32f);
-    pFilteredImage = ippiMalloc_32f_C1(roi.width, roi.height, &stepSize32f);   
+    pFilteredImage = ippiMalloc_32f_C1(roi.width, roi.height, &stepSize32f);
+    pKernel = ippiMalloc_32f_C1(roi.width, roi.height, &stepSize32f);
     
     //Convert input image to 32f format
     ippiConvert_8u32f_C1R(pSrcImage, srcImage.step[0], pSrc32fImage, stepSize32f, roi);
     //Normalize converted image
     ippiMulC_32f_C1IR(normFactor, pSrc32fImage, stepSize32f, roi);
 
-    //this->nal.noAdaptiveLaplacian(pSrc32fImage, pUSMImage, lambda);
+    this->noAdaptiveUSM.generateLoGKernel(7, 0.01l, pKernel);
     //this->nlmfd.DNLMFilter(pSrc32fImage, pUSMImage, pFilteredImage, wSize, wSize_n, sigma_s, sigma_r);
 
     //putting back everything
