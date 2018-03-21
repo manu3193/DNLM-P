@@ -20,7 +20,7 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, Ipp32f* pDst, IppiSize roiS
     Ipp32f borderValue = 0.0;
     IppiSize  kernelSize = { kernelLen, kernelLen };
     //Apply USM only in L component of Lab colorspase. Working with grayscale at the momment. 
-    int numChannels = 1
+    int numChannels = 1;
     //Step in bytes of 32f image
     int stepSize32f = 0;
     //Filtered image min and max values, for normalization
