@@ -11,7 +11,7 @@ using namespace std;
 class DNLMFilter{
 
 public:
-	Mat DNLMFilter(const Mat& A, const Mat& L, int w, int w_n, double sigma_s, int sigma_r);
+	Mat dnlmFilter(const Mat& A, const Mat& L, int w, int w_n, double sigma_s, int sigma_r);
 
 private:
 	Mat nlmfilBW_deceived(const Mat& A, const Mat& L, int w, int w_n, double sigma_d, int sigma_r);
