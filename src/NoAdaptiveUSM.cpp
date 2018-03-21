@@ -99,6 +99,7 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, Ipp32f* pDst, IppiSize roiS
  */
 int NoAdaptiveUSM::generateLoGKernel(int size, double sigma, Ipp32f* pKernel ){
 	
+	IppStatus status = ippStsNoErr;
 	Ipp32f sumExpTerm;
 	Ipp64f* pSumLaplTerm;
 	int halfSize  = (size - 1) / 2;
@@ -129,22 +130,22 @@ int NoAdaptiveUSM::generateLoGKernel(int size, double sigma, Ipp32f* pKernel ){
 		}
 	}
 
-	ippiMinMax_32f_C1R(pExpTerm, stepSize32f, roiSize, pMin, pMax);
-	ippiThreshold_Val_32f_C1IR(pExpTerm, stepSize32f, roiSize, (Ipp32f) (ipp_eps52 * (*pMax)), (Ipp32f) 0.0, ippCmpLess);
+	status = ippiMinMax_32f_C1R(pExpTerm, stepSize32f, roiSize, pMin, pMax);
+	status = ippiThreshold_Val_32f_C1IR(pExpTerm, stepSize32f, roiSize, (Ipp32f) (ipp_eps52 * (*pMax)), (Ipp32f) 0.0, ippCmpLess);
 
 	if (sumExpTerm != (Ipp32f) 0.0f)
 	{
 		//Normalize
-		ippiDivC_32f_C1IR(sumExpTerm, pExpTerm, stepSize32f, roiSize);
+		status = ippiDivC_32f_C1IR(sumExpTerm, pExpTerm, stepSize32f, roiSize);
 	}
 
 	//Compute laplacian
-	ippiAddC_32f_C1R(pRadXY, stepSize32f, (Ipp32f) (-2*std2), pLaplTerm, stepSize32f, roiSize);
-	ippiDivC_32f_C1IR((Ipp32f) (std2*std2), pLaplTerm, stepSize32f, roiSize);
-	ippiMul_32f_C1IR(pExpTerm, stepSize32f, pLaplTerm, stepSize32f, roiSize);
+	status = ippiAddC_32f_C1R(pRadXY, stepSize32f, (Ipp32f) (-2*std2), pLaplTerm, stepSize32f, roiSize);
+	status = ippiDivC_32f_C1IR((Ipp32f) (std2*std2), pLaplTerm, stepSize32f, roiSize);
+	status = ippiMul_32f_C1IR(pExpTerm, stepSize32f, pLaplTerm, stepSize32f, roiSize);
 
-	ippiSum_32f_C1R(pLaplTerm, stepSize32f, roiSize, pSumLaplTerm, ippAlgHintNone);
-	ippiAddC_32f_C1IR((Ipp32f) -(*pSumLaplTerm)/(size*size), pLaplTerm, stepSize32f, roiSize);
+	status = ippiSum_32f_C1R(pLaplTerm, stepSize32f, roiSize, pSumLaplTerm, ippAlgHintNone);
+	status = ippiAddC_32f_C1IR((Ipp32f) -(*pSumLaplTerm)/(size*size), pLaplTerm, stepSize32f, roiSize);
 
 	//Release memory
 	ippiFree(pRadXY);
