@@ -64,7 +64,7 @@ int NoAdaptiveUSM::generateLoGKernel(int size, double sigma, Ipp32f* pKernel ){
 	//Compute laplacian
 	ippiAddC_32f_C1R(pRadXY, stepSize32f, (Ipp32f) (-2*std2), pLaplTerm, stepSize32f, roiSize);
 	ippiDivC_32f_C1IR((Ipp32f) (std2*std2), pLaplTerm, stepSize32f, roiSize);
-	ippiMulC_32f_C1IR(pExpTerm, stepSize32f, pLaplTerm, stepSize32f, roiSize);
+	ippiMul_32f_C1IR(pExpTerm, stepSize32f, pLaplTerm, stepSize32f, roiSize);
 
 	ippiSum_32f_C1R(pLaplTerm, stepSize32f, roiSize, pSumLaplTerm, ippAlgHintNone);
 	ippiAddC_32f_C1IR((Ipp32f) -(*pSumLaplTerm)/(size*size), pLaplTerm, stepSize32f, roiSize);
