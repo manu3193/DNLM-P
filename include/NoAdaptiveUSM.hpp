@@ -11,7 +11,6 @@ using namespace std;
 class NoAdaptiveUSM{
 
 public:
-	NoAdaptiveUSM();
 	int generateLoGKernel(int size, double sigma, Ipp32f* pKernel );
 	int noAdaptiveUSM(const Ipp32f* pSrc, Ipp32f* pDst, IppiSize roiSize, double sigma, float lambda, int kernelLen);
 private:
