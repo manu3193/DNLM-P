@@ -2,7 +2,7 @@
 #include "DNLMFilter.hpp"
 
 // Pre-process input and select appropriate filter.
-Mat DNLMFilter::DNLMFilter(const Mat& A, const Mat& L, int w, int w_n, double sigma_s, int sigma_r){
+Mat DNLMFilter::dnlmFilter(const Mat& A, const Mat& L, int w, int w_n, double sigma_s, int sigma_r){
     double minA, maxA;
     Tools::minMax(A,&minA,&maxA);
     int type = A.type();
