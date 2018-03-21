@@ -3,7 +3,7 @@
 
 
 
-int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, Ipp32f* pDst, IppiSize roiSize, float lambda, int kernelLen){
+int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, Ipp32f* pDst, IppiSize roiSize, float lambda,  int kernelLen){
 	
 	if (pSrc == NULL || pDst == NULL)
 	{
@@ -12,32 +12,69 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, Ipp32f* pDst, IppiSize roiS
 	}
 
 	IppStatus status = ippStsNoErr;
+	Ipp32f *pFilteredImage = NULL, *pFilteredAbsImage = NULL;
 	Ipp8u *pBuffer = NULL;                /* Pointer to the work buffer */
     IppiFilterBorderSpec* pSpec = NULL;   /* context structure */
     int iTmpBufSize = 0, iSpecSize = 0;   /* Common work buffer size */
     IppiBorderType borderType = ippBorderRepl;
     Ipp32f borderValue = 0.0;
+    IppiSize  kernelSize = { kernelLen, kernelLen };
     //Apply USM only in L component of Lab colorspase. Working with grayscale at the momment. 
     int numChannels = 1
     //Step in bytes of 32f image
     int stepSize32f = 0;
+    //Filtered image min and max values, for normalization
+    Ipp32f minSrc, maxSrc, minFilt, maxFilt;
 
-    
+    //Allocate memory for laplacian kernel
+    Ipp32f* pKernel =  ippiMalloc_32f_C1(kernelLen, kernelLen, &stepSize32f);
+    //Allocate memory for filtered image
+    pFilteredImage = ippiMalloc_32f_C1(roiSize.width, roiSize.height, &stepSize32f); 
+    pFilteredAbsImage = ippiMalloc_32f_C1(roiSize.width, roiSize.height, &stepSize32f); 
+
+    //Generate laplacian of gaussian kernel
+    int code =this->generateLoGKernel(kernelLen, std, pKernel);
+
+    //Error handling
+    if (code != 1)
+    {
+    	/*handle error*/
+    }
 
     //aplying high pass filter
     //Calculating filter buffer size
-    status = ippiFilterBorderGetSize(kernelSize, roi, ipp32f, ipp32f, numChannels, &iSpecSize, &iTmpBufSize);
+    status = ippiFilterBorderGetSize(kernelSize, roiSize, ipp32f, ipp32f, numChannels, &iSpecSize, &iTmpBufSize);
 
     //Allocating filter buffer and specification
     pSpec = (IppiFilterBorderSpec *)ippsMalloc_8u(iSpecSize);
     pBuffer = ippsMalloc_8u(iTmpBufSize);
 
     //Initializing filter
-    check_sts( status = ippiFilterBorderInit_32f(kernel, kernelSize, ipp32f, numChannels, ippRndFinancial, pSpec);
+    status = ippiFilterBorderInit_32f(pKernel, kernelSize, ipp32f, numChannels, ippRndFinancial, pSpec);
     //Applying filter
-    status = ippiFilterBorder_32f_C1R(pIpp32fImage, stepSize32f, pFilteredImage, stepSize32f, roi, borderType, &borderValue, pSpec, pBuffer); 
+    status = ippiFilterBorder_32f_C1R(pSrc, stepSize32f, pFilteredImage, stepSize32f, roiSize, borderType, &borderValue, pSpec, pBuffer); 
 
+    //Normalization
+    //Get Src image max and min values
+    status = ippiMinMax_32f_C1R(pSrc, stepSize32f, roiSize, &minSrc, &maxSrc);
+    //Get Filtered image max and min values from abs(pFilteredImage)
+    status = ippiAbs_32f_C1R(pFilteredImage, stepSize32f, pFilteredAbsImage, stepSize32f, roiSize);
+    status = ippiMinMax_32f_C1R(pFilteredAbsImage, stepSize32f, roiSize, &minFilt, &maxFilt);
+    //Normalize
+    Ipp32f normFactor = (Ipp32f) maxSrc / maxFilt;
+    status = ippiMulC_32f_C1IR(normFactor, pFilteredImage, stepSize32f, roiSize);
 
+    //Apply USM
+    status = ippiMulC_32f_C1IR((Ipp32f) lambda, pFilteredImage, stepSize32f, roiSize);
+    status = ippiAdd_32f_C1R(pSrc, stepSize32f, pFilteredImage, stepSize32f, pDst, stepSize32f, roiSize);
+
+    //ToDo Error handling
+    //if (status!=ippStsNoErr)
+    //{
+    //	return -1;
+    //}
+
+    return 1;
 }
 
 
@@ -69,8 +106,8 @@ int NoAdaptiveUSM::generateLoGKernel(int size, double sigma, Ipp32f* pKernel ){
 	Ipp32f* pRadXY =  ippiMalloc_32f_C1(size, size, &stepSize32f);
 	//Allocate memory for matrix to store exponential term. 
 	Ipp32f* pExpTerm =  ippiMalloc_32f_C1(size, size, &stepSize32f);
-	//Allocate memory for matrix to store laplacian term. 
-	Ipp32f* pLaplTerm =  ippiMalloc_32f_C1(size, size, &stepSize32f);
+	//Copy Dst buffer dir to pointer for laplacian term. 
+	Ipp32f* pLaplTerm =  pKernel;
 
 
 	for (int i = 0; i < size; ++i)
@@ -102,13 +139,9 @@ int NoAdaptiveUSM::generateLoGKernel(int size, double sigma, Ipp32f* pKernel ){
 	ippiSum_32f_C1R(pLaplTerm, stepSize32f, roiSize, pSumLaplTerm, ippAlgHintNone);
 	ippiAddC_32f_C1IR((Ipp32f) -(*pSumLaplTerm)/(size*size), pLaplTerm, stepSize32f, roiSize);
 
-	//Assign computed kernel to dst pointer argument 
-	pKernel = pLaplTerm;
-
 	//Release memory
 	ippiFree(pRadXY);
 	ippiFree(pExpTerm);
-	ippiFree(pLaplTerm);
 
 	//Error code handling to be implemented.
 	return 1;
