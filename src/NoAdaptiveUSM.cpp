@@ -74,6 +74,13 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, Ipp32f* pDst, IppiSize roiS
     //	return -1;
     //}
 
+    //Free memory
+    ippsFree(pBuffer);
+    ippsFree(pSpec);
+    ippiFree(pKernel);
+    ippiFree(pFilteredImage);
+    ippiFree(pFilteredAbsImage);
+
     return 1;
 }
 
