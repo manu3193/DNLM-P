@@ -3,8 +3,9 @@
 
 
 
-int NoAdaptiveUSM::noAdaptativeUSM(const Ipp32f* pSrc, Ipp32f* pDst, float lambda, IppiMaskSize mask){
+int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, Ipp32f* pDst, IppiSize roiSize, float lambda, int kernelLen){
 	
+
 }
 
 
@@ -76,5 +77,7 @@ int NoAdaptiveUSM::generateLoGKernel(int size, double sigma, Ipp32f* pKernel ){
 	ippiFree(pRadXY);
 	ippiFree(pExpTerm);
 	ippiFree(pLaplTerm);
+
+	//Error code handling to be implemented.
 	return 1;
 }
