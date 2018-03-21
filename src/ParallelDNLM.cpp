@@ -63,7 +63,6 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     IppStatus status = ippStsNoErr;
 
     //Pointers to IPP type images 
-    Ipp8u *pSrcImage = NULL, *pDstImage = NULL;
     Ipp32f *pSrc32fImage = NULL, *pUSMImage = NULL, *pFilteredImage= NULL;
 
     //Variable to store 32f image step size in bytes 
