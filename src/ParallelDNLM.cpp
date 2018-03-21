@@ -95,7 +95,7 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     //Normalize converted image
     ippiMulC_32f_C1IR(normFactor, pSrc32fImage, stepSize32f, roi);
 
-    this->noAdaptiveUSM.noAdaptiveUSM(pSrc32fImage, pUSMImage, roi, kernelStd, lambda, kernelLen)
+    this->noAdaptiveUSM.noAdaptiveUSM(pSrc32fImage, pUSMImage, roi, kernelStd, lambda, kernelLen);
     //this->nlmfd.DNLMFilter(pSrc32fImage, pUSMImage, pFilteredImage, wSize, wSize_n, sigma_s, sigma_r);
 
     //putting back everything
