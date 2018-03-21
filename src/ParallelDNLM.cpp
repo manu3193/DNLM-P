@@ -99,6 +99,7 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     //this->nlmfd.DNLMFilter(pSrc32fImage, pUSMImage, pFilteredImage, wSize, wSize_n, sigma_s, sigma_r);
 
     //putting back everything
+    //ippiMulC_32f_C1IR(scaleFactor, pFilteredImage, stepSize32f, roi);
     ippiMulC_32f_C1IR(scaleFactor, pFilteredImage, stepSize32f, roi);
     ippiConvert_32f8u_C1R(pFilteredImage, stepSize32f, pDstImage , outputImage.step[0], roi, ippRndFinancial);
     
