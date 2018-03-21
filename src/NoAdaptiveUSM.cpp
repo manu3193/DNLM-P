@@ -101,11 +101,11 @@ int NoAdaptiveUSM::generateLoGKernel(int size, double sigma, Ipp32f* pKernel ){
 	
 	IppStatus status = ippStsNoErr;
 	Ipp32f sumExpTerm;
-	Ipp64f* pSumLaplTerm;
+	Ipp64f sumLaplTerm;
 	int halfSize  = (size - 1) / 2;
 	int stepSize32f = 0;
 	Ipp64f std2 = (Ipp64f) sigma*sigma;
-	Ipp32f *pMin = NULL, *pMax = NULL;
+	Ipp32f expMin, expMax;
 	IppiSize roiSize;
     roiSize.width = size;
     roiSize.height = size;
@@ -117,21 +117,22 @@ int NoAdaptiveUSM::generateLoGKernel(int size, double sigma, Ipp32f* pKernel ){
 	//Copy Dst buffer dir to pointer for laplacian term. 
 	Ipp32f* pLaplTerm =  pKernel;
 
-
+	int index = 0;
 	for (int i = 0; i < size; ++i)
 	{
 		for (int j = 0; j < size; ++j)
 		{
+			index = i*(stepSize32f/sizeof(Ipp32f)) + j;
 			//Compute radial distance term (x*x + y*y) and exponential term
-			pRadXY[i*stepSize32f + j] = (Ipp32f) ((i - halfSize) * (i - halfSize) + (j - halfSize) * (j - halfSize));
-			pExpTerm[i*stepSize32f + j] = (Ipp32f) exp(pRadXY[i*stepSize32f + j] / (-2*std2));
+			pRadXY[index] = (Ipp32f) ((i - halfSize) * (i - halfSize) + (j - halfSize) * (j - halfSize));
+			pExpTerm[index] = (Ipp32f) exp(pRadXY[index] / (-2*std2));
 			//Store summation of the exponential result to normalize it
-			sumExpTerm += pExpTerm[i*stepSize32f + j];
+			sumExpTerm += pExpTerm[index];
 		}
 	}
 
-	status = ippiMinMax_32f_C1R(pExpTerm, stepSize32f, roiSize, pMin, pMax);
-	status = ippiThreshold_Val_32f_C1IR(pExpTerm, stepSize32f, roiSize, (Ipp32f) (ipp_eps52 * (*pMax)), (Ipp32f) 0.0, ippCmpLess);
+	status = ippiMinMax_32f_C1R(pExpTerm, stepSize32f, roiSize, &expMin, &expMax);
+	status = ippiThreshold_Val_32f_C1IR(pExpTerm, stepSize32f, roiSize, (Ipp32f) (ipp_eps52 * expMax), (Ipp32f) 0.0, ippCmpLess);
 
 	if (sumExpTerm != (Ipp32f) 0.0f)
 	{
@@ -144,8 +145,8 @@ int NoAdaptiveUSM::generateLoGKernel(int size, double sigma, Ipp32f* pKernel ){
 	status = ippiDivC_32f_C1IR((Ipp32f) (std2*std2), pLaplTerm, stepSize32f, roiSize);
 	status = ippiMul_32f_C1IR(pExpTerm, stepSize32f, pLaplTerm, stepSize32f, roiSize);
 
-	status = ippiSum_32f_C1R(pLaplTerm, stepSize32f, roiSize, pSumLaplTerm, ippAlgHintNone);
-	status = ippiAddC_32f_C1IR((Ipp32f) -(*pSumLaplTerm)/(size*size), pLaplTerm, stepSize32f, roiSize);
+	status = ippiSum_32f_C1R(pLaplTerm, stepSize32f, roiSize, &sumLaplTerm, ippAlgHintNone);
+	status = ippiAddC_32f_C1IR((Ipp32f) -sumLaplTerm/(size*size), pLaplTerm, stepSize32f, roiSize);
 
 	//Release memory
 	ippiFree(pRadXY);
