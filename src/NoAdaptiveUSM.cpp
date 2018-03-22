@@ -132,7 +132,7 @@ int NoAdaptiveUSM::generateLoGKernel(int size, double sigma, Ipp32f* pKernel ){
 	}
 
 	status = ippiMinMax_32f_C1R(pExpTerm, stepSize32f, roiSize, &expMin, &expMax);
-	status = ippiThreshold_Val_32f_C1IR(pExpTerm, stepSize32f, roiSize, (Ipp32f) (ipp_eps52 * expMax), (Ipp32f) 0.0, ippCmpLess);
+	status = ippiThreshold_Val_32f_C1IR(pExpTerm, stepSize32f, roiSize, (Ipp32f) (IPP_EPS23 * expMax), (Ipp32f) 0.0, ippCmpLess);
 
 	if (sumExpTerm != (Ipp32f) 0.0f)
 	{
