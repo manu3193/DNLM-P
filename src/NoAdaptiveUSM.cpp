@@ -3,7 +3,7 @@
 
 
 
-int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, Ipp32f* pDst, IppiSize roiSize, double sigma, float lambda,  int kernelLen){
+int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, Ipp32f* pDst, IppiSize roiSize, float sigma, float lambda,  int kernelLen){
 	
 	if (pSrc == NULL || pDst == NULL)
 	{
@@ -97,7 +97,7 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, Ipp32f* pDst, IppiSize roiS
  *
  * @return     returns simple error code at the momment: 1 if success, any other number means error. 
  */
-int NoAdaptiveUSM::generateLoGKernel(int size, double sigma, Ipp32f* pKernel ){
+int NoAdaptiveUSM::generateLoGKernel(int size, float sigma, Ipp32f* pKernel ){
 	
 	IppStatus status = ippStsNoErr;
 	Ipp32f sumExpTerm;
