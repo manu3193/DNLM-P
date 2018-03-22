@@ -100,8 +100,9 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
 
     //putting back everything
     //ippiMulC_32f_C1IR(scaleFactor, pFilteredImage, stepSize32f, roi);
-    ippiMulC_32f_C1IR(scaleFactor, pFilteredImage, stepSize32f, roi);
-    ippiConvert_32f8u_C1R(pFilteredImage, stepSize32f, pDstImage , outputImage.step[0], roi, ippRndFinancial);
+    //ippiConvert_32f8u_C1R(pFilteredImage, stepSize32f, pDstImage , outputImage.step[0], roi, ippRndFinancial);
+    ippiMulC_32f_C1IR(scaleFactor, pUSMImage, stepSize32f, roi);
+    ippiConvert_32f8u_C1R(pFilteredImage, pUSMImage, pDstImage , outputImage.step[0], roi, ippRndFinancial);
     
     //Freeing memory
     ippiFree(pSrc32fImage);
