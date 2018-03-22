@@ -104,7 +104,7 @@ int NoAdaptiveUSM::generateLoGKernel(int size, float sigma, Ipp32f* pKernel ){
 	Ipp64f sumLaplTerm;
 	int halfSize  = (size - 1) / 2;
 	int stepSize32f = 0;
-	Ipp64f std2 = (Ipp64f) sigma*sigma;
+	Ipp32f std2 = (Ipp32f) sigma*sigma;
 	Ipp32f expMin, expMax;
 	IppiSize roiSize;
     roiSize.width = size;
