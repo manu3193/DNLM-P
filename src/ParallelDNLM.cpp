@@ -47,10 +47,10 @@ Mat ParallelDNLM::processImage(const Mat& inputImage){
     //Set parameters for processing
     int wRSize = 7;
     int wSize_n=3;
-    float kernelStd = 0.6f;
-    int kernelLen = 7;
+    float kernelStd = 0.001f;
+    int kernelLen = 19;
     float sigma_r = 12.0f; //13
-    float lambda = 1.0f;
+    float lambda = 2.5f;
     
     Mat fDeceivedNLM = filterDNLM(inputImage, wRSize, wSize_n, sigma_r, lambda, kernelLen, kernelStd);
 

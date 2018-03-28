@@ -54,29 +54,29 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* p
     //Initializing filter
     status = ippiFilterBorderInit_32f(pKernel, kernelSize, ipp32f, numChannels, ippRndFinancial, pSpec);
     //Applying filter
-    status = ippiFilterBorder_32f_C1R(pSrc, stepBytesSrc, pDst, stepBytesDst, roiSize, borderType, &borderValue, pSpec, pBuffer); 
+    status = ippiFilterBorder_32f_C1R(pSrc, stepBytesSrc, pFilteredImage, stepBytesFiltered, roiSize, borderType, &borderValue, pSpec, pBuffer); 
 
     //Normalization
     //Get Src image max and min values
-    //status = ippiMinMax_32f_C1R(pSrc, stepBytesSrc, roiSize, &minSrc, &maxSrc);
+    status = ippiMinMax_32f_C1R(pSrc, stepBytesSrc, roiSize, &minSrc, &maxSrc);
     //Get Filtered image max and min values from abs(pFilteredImage)
-    //status = ippiAbs_32f_C1R(pFilteredImage, stepBytesFiltered, pFilteredAbsImage, stepBytesAbs, roiSize);
-    //status = ippiMinMax_32f_C1R(pFilteredAbsImage, stepBytesAbs, roiSize, &minFilt, &maxFilt);
+    status = ippiAbs_32f_C1R(pFilteredImage, stepBytesFiltered, pFilteredAbsImage, stepBytesAbs, roiSize);
+    status = ippiMinMax_32f_C1R(pFilteredAbsImage, stepBytesAbs, roiSize, &minFilt, &maxFilt);
     //Normalize
-    //Ipp32f normFactor = (Ipp32f) maxSrc / maxFilt;
-    //status = ippiMulC_32f_C1IR(normFactor, pFilteredImage, stepBytesFiltered, roiSize);
+    Ipp32f normFactor = (Ipp32f) maxSrc / maxFilt;
+    status = ippiMulC_32f_C1IR(normFactor, pFilteredImage, stepBytesFiltered, roiSize);
 
     //Apply USM
-    //status = ippiMulC_32f_C1IR((Ipp32f) lambda, pFilteredImage, stepBytesFiltered, roiSize);
-    //status = ippiAdd_32f_C1R(pSrc, stepBytesSrc, pFilteredImage, stepBytesFiltered, pDst, stepBytesDst, roiSize);
+    status = ippiMulC_32f_C1IR((Ipp32f) lambda, pFilteredImage, stepBytesFiltered, roiSize);
+    status = ippiAdd_32f_C1R(pSrc, stepBytesSrc, pFilteredImage, stepBytesFiltered, pDst, stepBytesDst, roiSize);
     
     //ToDo Error handling
-    //if (status!=ippStsNoErr)
-    //{
-    //	return -1;
-    //}
-    //
-    //
+    if (status!=ippStsNoErr)
+    {
+    	return -1;
+    }
+    
+    
 
     //Free memory
     ippsFree(pBuffer);
@@ -162,7 +162,7 @@ int NoAdaptiveUSM::generateLoGKernel(int size, float sigma, Ipp32f* pKernel ){
     {
         for (int j = 0; j < size; ++j)
         {
-            pKernel[i*(size)+j] = pLaplTerm[i*(stepBytesLaplTerm/sizeof(Ipp32f)) + j];
+            pKernel[i*(size)+j] = -pLaplTerm[i*(stepBytesLaplTerm/sizeof(Ipp32f)) + j];
         }
     }
 
