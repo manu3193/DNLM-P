@@ -12,7 +12,7 @@ class NoAdaptiveUSM{
 
 public:
 	int generateLoGKernel(int size, float sigma, Ipp32f* pKernel );
-	int noAdaptiveUSM(const Ipp32f* pSrc, Ipp32f* pDst, IppiSize roiSize, float sigma, float lambda, int kernelLen);
+	int noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* pDst, int stepByteDst, IppiSize roiSize, float sigma, float lambda, int kernelLen);
 private:
 
 };

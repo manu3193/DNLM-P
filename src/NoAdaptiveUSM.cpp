@@ -3,7 +3,7 @@
 
 
 
-int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, Ipp32f* pDst, IppiSize roiSize, float sigma, float lambda,  int kernelLen){
+int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* pDst, int stepBytesDst, IppiSize roiSize, float sigma, float lambda,  int kernelLen){
 	
 	if (pSrc == NULL || pDst == NULL)
 	{
@@ -21,16 +21,18 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, Ipp32f* pDst, IppiSize roiS
     IppiSize  kernelSize = { kernelLen, kernelLen };
     //Apply USM only in L component of Lab colorspase. Working with grayscale at the momment. 
     int numChannels = 1;
-    //Step in bytes of 32f image
-    int stepSize32f = 0;
+    //Step in bytes of images
+    int stepBytesFiltered = 0;
+    int stepBytesAbs = 0;
     //Filtered image min and max values, for normalization
     Ipp32f minSrc, maxSrc, minFilt, maxFilt;
 
-    //Allocate memory for laplacian kernel
-    Ipp32f* pKernel =  ippiMalloc_32f_C1(kernelLen, kernelLen, &stepSize32f);
+    //Declare array for laplacian kernel
+    Ipp32f pKernel[kernelLen * kernelLen];
     //Allocate memory for filtered image
-    pFilteredImage = ippiMalloc_32f_C1(roiSize.width, roiSize.height, &stepSize32f); 
-    pFilteredAbsImage = ippiMalloc_32f_C1(roiSize.width, roiSize.height, &stepSize32f); 
+    pFilteredImage = ippiMalloc_32f_C1(roiSize.width, roiSize.height, &stepBytesFiltered); 
+	//Allocate memory for filtered abs image
+    pFilteredAbsImage = ippiMalloc_32f_C1(roiSize.width, roiSize.height, &stepBytesAbs); 
 
     //Generate laplacian of gaussian kernel
     int code =this->generateLoGKernel(kernelLen, sigma, pKernel);
@@ -52,32 +54,34 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, Ipp32f* pDst, IppiSize roiS
     //Initializing filter
     status = ippiFilterBorderInit_32f(pKernel, kernelSize, ipp32f, numChannels, ippRndFinancial, pSpec);
     //Applying filter
-    status = ippiFilterBorder_32f_C1R(pSrc, stepSize32f, pFilteredImage, stepSize32f, roiSize, borderType, &borderValue, pSpec, pBuffer); 
+    status = ippiFilterBorder_32f_C1R(pSrc, stepBytesSrc, pDst, stepBytesDst, roiSize, borderType, &borderValue, pSpec, pBuffer); 
 
     //Normalization
     //Get Src image max and min values
-    status = ippiMinMax_32f_C1R(pSrc, stepSize32f, roiSize, &minSrc, &maxSrc);
+    //status = ippiMinMax_32f_C1R(pSrc, stepBytesSrc, roiSize, &minSrc, &maxSrc);
     //Get Filtered image max and min values from abs(pFilteredImage)
-    status = ippiAbs_32f_C1R(pFilteredImage, stepSize32f, pFilteredAbsImage, stepSize32f, roiSize);
-    status = ippiMinMax_32f_C1R(pFilteredAbsImage, stepSize32f, roiSize, &minFilt, &maxFilt);
+    //status = ippiAbs_32f_C1R(pFilteredImage, stepBytesFiltered, pFilteredAbsImage, stepBytesAbs, roiSize);
+    //status = ippiMinMax_32f_C1R(pFilteredAbsImage, stepBytesAbs, roiSize, &minFilt, &maxFilt);
     //Normalize
-    Ipp32f normFactor = (Ipp32f) maxSrc / maxFilt;
-    status = ippiMulC_32f_C1IR(normFactor, pFilteredImage, stepSize32f, roiSize);
+    //Ipp32f normFactor = (Ipp32f) maxSrc / maxFilt;
+    //status = ippiMulC_32f_C1IR(normFactor, pFilteredImage, stepBytesFiltered, roiSize);
 
     //Apply USM
-    status = ippiMulC_32f_C1IR((Ipp32f) lambda, pFilteredImage, stepSize32f, roiSize);
-    status = ippiAdd_32f_C1R(pSrc, stepSize32f, pFilteredImage, stepSize32f, pDst, stepSize32f, roiSize);
-
+    //status = ippiMulC_32f_C1IR((Ipp32f) lambda, pFilteredImage, stepBytesFiltered, roiSize);
+    //status = ippiAdd_32f_C1R(pSrc, stepBytesSrc, pFilteredImage, stepBytesFiltered, pDst, stepBytesDst, roiSize);
+    
     //ToDo Error handling
     //if (status!=ippStsNoErr)
     //{
     //	return -1;
     //}
+    //
+    //
 
     //Free memory
     ippsFree(pBuffer);
     ippsFree(pSpec);
-    ippiFree(pKernel);
+    //ippiFree(pKernel);
     ippiFree(pFilteredImage);
     ippiFree(pFilteredAbsImage);
 
@@ -100,10 +104,12 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, Ipp32f* pDst, IppiSize roiS
 int NoAdaptiveUSM::generateLoGKernel(int size, float sigma, Ipp32f* pKernel ){
 	
 	IppStatus status = ippStsNoErr;
-	Ipp32f sumExpTerm;
-	Ipp64f sumLaplTerm;
+	Ipp32f sumExpTerm = 0;
+	Ipp64f sumLaplTerm = 0;
 	int halfSize  = (size - 1) / 2;
-	int stepSize32f = 0;
+	int stepBytesRadXY = 0;
+	int stepBytesExpTerm = 0;
+    int stepBytesLaplTerm = 0;
 	Ipp32f std2 = (Ipp32f) sigma*sigma;
 	Ipp32f expMin, expMax;
 	IppiSize roiSize;
@@ -111,46 +117,60 @@ int NoAdaptiveUSM::generateLoGKernel(int size, float sigma, Ipp32f* pKernel ){
     roiSize.height = size;
 
 	//Allocate memory for matrix to store (x*x + y*y) term. 
-	Ipp32f* pRadXY =  ippiMalloc_32f_C1(size, size, &stepSize32f);
+	Ipp32f* pRadXY =  ippiMalloc_32f_C1(size, size, &stepBytesRadXY);
 	//Allocate memory for matrix to store exponential term. 
-	Ipp32f* pExpTerm =  ippiMalloc_32f_C1(size, size, &stepSize32f);
+	Ipp32f* pExpTerm =  ippiMalloc_32f_C1(size, size, &stepBytesExpTerm);
 	//Copy Dst buffer dir to pointer for laplacian term. 
-	Ipp32f* pLaplTerm =  pKernel;
+	Ipp32f* pLaplTerm =  ippiMalloc_32f_C1(size, size, &stepBytesLaplTerm);
 
-	int index = 0;
+	int indexRadXY = 0;
+	int indexExpTerm = 0;
 	for (int i = 0; i < size; ++i)
 	{
 		for (int j = 0; j < size; ++j)
 		{
-			index = i*(stepSize32f/sizeof(Ipp32f)) + j;
+			indexRadXY = i*(stepBytesRadXY/sizeof(Ipp32f)) + j;
+			indexExpTerm = i*(stepBytesExpTerm/sizeof(Ipp32f)) + j;
 			//Compute radial distance term (x*x + y*y) and exponential term
-			pRadXY[index] = (Ipp32f) ((i - halfSize) * (i - halfSize) + (j - halfSize) * (j - halfSize));
-			pExpTerm[index] = (Ipp32f) exp(pRadXY[index] / (-2*std2));
+			*(pRadXY+indexRadXY) = (Ipp32f) ((i - halfSize) * (i - halfSize) + (j - halfSize) * (j - halfSize));
+			*(pExpTerm+indexExpTerm) = (Ipp32f) exp(*(pRadXY+indexRadXY) / (-2*std2));
 			//Store summation of the exponential result to normalize it
-			sumExpTerm += pExpTerm[index];
+			sumExpTerm += *(pExpTerm+indexExpTerm);
 		}
 	}
 
-	status = ippiMinMax_32f_C1R(pExpTerm, stepSize32f, roiSize, &expMin, &expMax);
-	status = ippiThreshold_Val_32f_C1IR(pExpTerm, stepSize32f, roiSize, (Ipp32f) (IPP_EPS23 * expMax), (Ipp32f) 0.0, ippCmpLess);
 
-	if (sumExpTerm != (Ipp32f) 0.0f)
+	status = ippiMinMax_32f_C1R(pExpTerm, stepBytesExpTerm, roiSize, &expMin, &expMax);
+	status = ippiThreshold_Val_32f_C1IR(pExpTerm, stepBytesExpTerm, roiSize, (Ipp32f) (IPP_EPS23 * expMax), (Ipp32f) 0.0, ippCmpLess);
+
+
+	if (sumExpTerm != (Ipp32f) 1.0f)
 	{
 		//Normalize
-		status = ippiDivC_32f_C1IR(sumExpTerm, pExpTerm, stepSize32f, roiSize);
+		status = ippiDivC_32f_C1IR(sumExpTerm, pExpTerm, stepBytesExpTerm, roiSize);
 	}
 
 	//Compute laplacian
-	status = ippiAddC_32f_C1R(pRadXY, stepSize32f, (Ipp32f) (-2*std2), pLaplTerm, stepSize32f, roiSize);
-	status = ippiDivC_32f_C1IR((Ipp32f) (std2*std2), pLaplTerm, stepSize32f, roiSize);
-	status = ippiMul_32f_C1IR(pExpTerm, stepSize32f, pLaplTerm, stepSize32f, roiSize);
+	status = ippiAddC_32f_C1R(pRadXY, stepBytesRadXY, (Ipp32f) (-2*std2), pLaplTerm, stepBytesLaplTerm, roiSize);
+	status = ippiDivC_32f_C1IR((Ipp32f) (std2 * std2), pLaplTerm, stepBytesLaplTerm, roiSize);
 
-	status = ippiSum_32f_C1R(pLaplTerm, stepSize32f, roiSize, &sumLaplTerm, ippAlgHintNone);
-	status = ippiAddC_32f_C1IR((Ipp32f) -sumLaplTerm/(size*size), pLaplTerm, stepSize32f, roiSize);
+	status = ippiMul_32f_C1IR(pExpTerm, stepBytesExpTerm, pLaplTerm, stepBytesLaplTerm, roiSize);
+	status = ippiSum_32f_C1R(pLaplTerm, stepBytesLaplTerm, roiSize, &sumLaplTerm, ippAlgHintNone);	
+	status = ippiAddC_32f_C1IR((Ipp32f) -sumLaplTerm/(size*size), pLaplTerm, stepBytesLaplTerm, roiSize);
+
+    for (int i = 0; i < size; ++i)
+    {
+        for (int j = 0; j < size; ++j)
+        {
+            *(pKernel+(i*(size)+j)) = *(pLaplTerm + i*(stepBytesLaplTerm/sizeof(Ipp32f)) + j);
+        }
+    }
 
 	//Release memory
 	ippiFree(pRadXY);
 	ippiFree(pExpTerm);
+    ippiFree(pLaplTerm);
+
 
 	//Error code handling to be implemented.
 	return 1;
