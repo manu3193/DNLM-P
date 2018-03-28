@@ -2,40 +2,46 @@
 #include "DNLMFilter.hpp"
 
 // Pre-process input and select appropriate filter.
-Mat DNLMFilter::dnlmFilter(const Mat& A, const Mat& L, int w, int w_n, double sigma_s, int sigma_r){
-    // double minA, maxA;
-    // Tools::minMax(A,&minA,&maxA);
-    // int type = A.type();
+int DNLMFilter::dnlmFilter(const Ipp32f* pSrc, int stepBytesSrc, int srcType, const Ipp32f* pUSMImage, int stepByteUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
 
-    // if (!(type == CV_32FC3) || minA < 0 || maxA > 1){
-    //    cerr << "Input image A must be a double precision matrix of size NxMx1 on the closed interval [0,1]." << endl;
-    // }
+    int status;
 
-    // Apply grayscale nlm filtering.
-    Mat B;
-    // if (type == CV_32FC3 )
-    //     B = this->nlmfltBWDeceived(A, L, w, w_n, sigma_s, sigma_r);
-    // else
-    //     ;
-    return B;
+     if (srcType == CV_32FC3){
+    
+        //apply DNLM for color images   
+        //status = this->dnlmFilter(pSrc, stepBytesSrc, pUSMImage, stepByteUSM, pDst, stepBytesDst, imageSize, w, w_n, sigma_r);
+
+     }
+
+    else if (srcType == CV_32FC1 ){
+        //apply DNLM for grayscale images   
+        status = this->dnlmFilterBW(pSrc, stepBytesSrc, pUSMImage, stepByteUSM, pDst, stepBytesDst, imageSize, w, w_n, sigma_r);
+    }
+    
+    else
+         cout<< "Error in image format" << endl;
+    return status;
 }
 
-//Implements nlm filter for color images.
-//sigma range is multiplied by 100
-Mat DNLMFilter::nlmfltBWDeceived(const Mat& A, const Mat& L, int w, int w_n, double sigma_d, int sigma_r){
-    Mat B,C,D;
+//Implements dnlm filter for grayscale images.
+int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrc, int stepBytesSrc, const Ipp32f* pUSMImage, int stepByteUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
+    //Variable to store status
+    int status;
+    Ipp32f* pSrcBorder = NULL;
+    int stepBytesSrcBorder = 0;
 
-    //Convert input BGR image to CIELab color space.
-    //CIELab 'a' and 'b' values go from -127 to 127
-    // cout << "Using the CIELab color space." << endl;
-    // cvtColor(A,B,CV_BGR2Lab);
+    //Compute border offset for border replicated image
+    int borderOffset = floor(w/2)+floor(w_n/2);
+    IppiSize imageBorderSize = {imageSize.width + borderOffset, imageSize.height + borderOffset};
 
-    // C = this->nlmfilBW_deceived(B, L, w, w_n, sigma_d,sigma_r);
 
-    // //Convert filtered image back to sRGB color space.
-    // cvtColor(C,D,CV_Lab2BGR);
+    //Allocate memory for image with borders
+    pSrcBorder = ippiMalloc_32f_C1(roi.width, roi.height, &stepBytesSrcBorder);
+    //
+    // Replicate border for full image filtering
+    status = ippiCopyReplicateBorder_32f_C1R(pSrc, stepBytesSrc, imageSize, pSrcBorder, stepBytesSrcBorder, imageBorderSize, borderOffset, borderOffset);
 
-    return D;
+    
 }
 
 Mat DNLMFilter::nlmfilBW_deceived(const Mat& A, const Mat& Laplacian, int w, int w_n, double sigma_d, int sigma_r){

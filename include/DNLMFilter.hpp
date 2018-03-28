@@ -11,11 +11,9 @@ using namespace std;
 class DNLMFilter{
 
 public:
-	Mat dnlmFilter(const Mat& A, const Mat& L, int w, int w_n, double sigma_s, int sigma_r);
+	int dnlmFilter(const Ipp32f* pSrc, int stepBytesSrc, int srcType, const Ipp32f* pUSMImage, int stepByteUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r);
 
 private:
-	Mat nlmfilBW_deceived(const Mat& A, const Mat& L, int w, int w_n, double sigma_d, int sigma_r);
-	Mat nlmfltBWDeceived(const Mat& A, const Mat& L, int w, int w_n, double sigma_d, int sigma_r);
-    Mat CalcEuclideanDistMat(const Mat& I, int w_n, int i, int j, int iMin, int jMin);
+	int dnlmFilterBW(const Ipp32f* pSrc, int stepBytesSrc, const Ipp32f* pUSMImage, int stepByteUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r);
 };
 #endif /* DNLMFILTER_HPP_ */
