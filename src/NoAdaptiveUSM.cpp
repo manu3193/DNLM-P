@@ -132,10 +132,10 @@ int NoAdaptiveUSM::generateLoGKernel(int size, float sigma, Ipp32f* pKernel ){
 			indexRadXY = i*(stepBytesRadXY/sizeof(Ipp32f)) + j;
 			indexExpTerm = i*(stepBytesExpTerm/sizeof(Ipp32f)) + j;
 			//Compute radial distance term (x*x + y*y) and exponential term
-			*(pRadXY+indexRadXY) = (Ipp32f) ((i - halfSize) * (i - halfSize) + (j - halfSize) * (j - halfSize));
-			*(pExpTerm+indexExpTerm) = (Ipp32f) exp(*(pRadXY+indexRadXY) / (-2*std2));
+			pRadXY[indexRadXY] = (Ipp32f) ((i - halfSize) * (i - halfSize) + (j - halfSize) * (j - halfSize));
+			pExpTerm[indexExpTerm] = (Ipp32f) exp(pRadXY[indexRadXY] / (-2*std2));
 			//Store summation of the exponential result to normalize it
-			sumExpTerm += *(pExpTerm+indexExpTerm);
+			sumExpTerm += pExpTerm[indexExpTerm];
 		}
 	}
 
@@ -162,7 +162,7 @@ int NoAdaptiveUSM::generateLoGKernel(int size, float sigma, Ipp32f* pKernel ){
     {
         for (int j = 0; j < size; ++j)
         {
-            *(pKernel+(i*(size)+j)) = *(pLaplTerm + i*(stepBytesLaplTerm/sizeof(Ipp32f)) + j);
+            pKernel[i*(size)+j] = pLaplTerm[i*(stepBytesLaplTerm/sizeof(Ipp32f)) + j];
         }
     }
 
