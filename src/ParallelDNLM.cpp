@@ -98,13 +98,13 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     ippiMulC_32f_C1IR(normFactor, pSrc32fImage, stepBytesSrc, roi);
 
     this->noAdaptiveUSM.noAdaptiveUSM(pSrc32fImage, stepBytesSrc, pUSMImage, stepBytesUSM, roi, kernelStd, lambda, kernelLen);
-    //this->nlmfd.DNLMFilter(pSrc32fImage, pUSMImage, pFilteredImage, wSize, wSize_n, sigma_s, sigma_r);
+    this->dnlmFilter.dnlmFilter(pSrc32fImage, stepBytesSrc, CV_32FC1, pUSMImage, stepBytesUSM, pFilteredImage, stepBytesFiltered, roi, wSize, wSize_n, sigma_r);
 
     //putting back everything
     //ippiMulC_32f_C1IR(scaleFactor, pFilteredImage, stepBytesFiltered, roi);
     //ippiConvert_32f8u_C1R(pFilteredImage, stepBytesFiltered, pDstImage , outputImage.step[0], roi, ippRndFinancial);
-    ippiMulC_32f_C1IR(scaleFactor, pUSMImage, stepBytesUSM, roi);
-    ippiConvert_32f8u_C1R(pUSMImage, stepBytesUSM, pDstImage , outputImage.step[0], roi, ippRndFinancial);
+    ippiMulC_32f_C1IR(scaleFactor, pFilteredImage, stepBytesFiltered, roi);
+    ippiConvert_32f8u_C1R(pFilteredImage, stepBytesFiltered, pDstImage , outputImage.step[0], roi, ippRndFinancial);
     
     //Freeing memory
     ippiFree(pSrc32fImage);
