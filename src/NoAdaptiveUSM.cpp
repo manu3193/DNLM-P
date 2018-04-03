@@ -125,14 +125,14 @@ int NoAdaptiveUSM::generateLoGKernel(int size, float sigma, Ipp32f* pKernel ){
 
 	int indexRadXY = 0;
 	int indexExpTerm = 0;
-	for (int i = 0; i < size; ++i)
+	for (int j = 0; j < size; ++j)
 	{
-		for (int j = 0; j < size; ++j)
+		for (int i = 0; i < size; ++i)
 		{
-			indexRadXY = i*(stepBytesRadXY/sizeof(Ipp32f)) + j;
-			indexExpTerm = i*(stepBytesExpTerm/sizeof(Ipp32f)) + j;
+			indexRadXY = j*(stepBytesRadXY/sizeof(Ipp32f)) + i;
+			indexExpTerm = j*(stepBytesExpTerm/sizeof(Ipp32f)) + i;
 			//Compute radial distance term (x*x + y*y) and exponential term
-			pRadXY[indexRadXY] = (Ipp32f) ((i - halfSize) * (i - halfSize) + (j - halfSize) * (j - halfSize));
+			pRadXY[indexRadXY] = (Ipp32f) ((j - halfSize) * (j - halfSize) + (i - halfSize) * (i - halfSize));
 			pExpTerm[indexExpTerm] = (Ipp32f) exp(pRadXY[indexRadXY] / (-2*std2));
 			//Store summation of the exponential result to normalize it
 			sumExpTerm += pExpTerm[indexExpTerm];
@@ -158,11 +158,11 @@ int NoAdaptiveUSM::generateLoGKernel(int size, float sigma, Ipp32f* pKernel ){
 	status = ippiSum_32f_C1R(pLaplTerm, stepBytesLaplTerm, roiSize, &sumLaplTerm, ippAlgHintNone);	
 	status = ippiAddC_32f_C1IR((Ipp32f) -sumLaplTerm/(size*size), pLaplTerm, stepBytesLaplTerm, roiSize);
 
-    for (int i = 0; i < size; ++i)
+    for (int j = 0; j < size; ++j)
     {
-        for (int j = 0; j < size; ++j)
+        for (int i = 0; i < size; ++i)
         {
-            pKernel[i*(size)+j] = -pLaplTerm[i*(stepBytesLaplTerm/sizeof(Ipp32f)) + j];
+            pKernel[j*(size)+i] = -pLaplTerm[j*(stepBytesLaplTerm/sizeof(Ipp32f)) + i];
         }
     }
 

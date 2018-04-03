@@ -70,14 +70,14 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* pUSMI
     cout << "Window w/border H: "<< windowBorderSize.height << " W: " << windowBorderSize.width <<endl;
     cout << "Patch H: "<< tplSize.height << " W: " << tplSize.width <<endl;
 
-    for (int i = 0; i < imageSize.height; ++i)
+    for (int j = 0; j < imageSize.height; ++j)
     {
-        for (int j = 0; j < imageSize.width; ++j)
+        for (int i = 0; i < imageSize.width; ++i)
         {
             
-            pWindowStart = pSrcBorder + (i*(stepBytesSrcBorder/sizeof(Ipp32f))+j); 
-            pTplStart = pSrcBorder + (i + tplStartOffset)*(stepBytesSrcBorder/sizeof(Ipp32f))+(j + tplStartOffset);
-            pUSMWindowStart = pUSMImage + (i*(stepBytesUSM/sizeof(Ipp32f))+j);
+            pWindowStart = pSrcBorder + (j*(stepBytesSrcBorder/sizeof(Ipp32f))+i); 
+            pTplStart = pSrcBorder + (j + tplStartOffset)*(stepBytesSrcBorder/sizeof(Ipp32f))+(i + tplStartOffset);
+            pUSMWindowStart = pUSMImage + (j*(stepBytesUSM/sizeof(Ipp32f))+i);
             status = ippiSqrDistanceNorm_32f_C1R( pWindowStart, stepBytesSrcBorder, windowBorderSize, pTplStart, stepBytesSrcBorder, tplSize, pSqrDist, stepBytesSqrDist, normL2AlgCfg, pBuffer);
             
             status = ippiDivC_32f_C1IR((Ipp32f) -(sigma_r * sigma_r), pSqrDist, stepBytesSqrDist, windowSize);
