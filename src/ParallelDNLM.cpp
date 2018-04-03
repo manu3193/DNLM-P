@@ -49,7 +49,7 @@ Mat ParallelDNLM::processImage(const Mat& inputImage){
     int wSize_n=3;
     float kernelStd = 0.001f;
     int kernelLen = 19;
-    float sigma_r = 12.0f; //13
+    float sigma_r = 3.0f; //13
     float lambda = 1.5f;
     
     Mat fDeceivedNLM = filterDNLM(inputImage, wRSize, wSize_n, sigma_r, lambda, kernelLen, kernelStd);
@@ -98,7 +98,7 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     ippiMulC_32f_C1IR(normFactor, pSrc32fImage, stepBytesSrc, roi);
 
     this->noAdaptiveUSM.noAdaptiveUSM(pSrc32fImage, stepBytesSrc, pUSMImage, stepBytesUSM, roi, kernelStd, lambda, kernelLen);
-    this->dnlmFilter.dnlmFilter(pSrc32fImage, stepBytesSrc, CV_32FC1, pUSMImage, stepBytesUSM, pFilteredImage, stepBytesFiltered, roi, wSize, wSize_n, sigma_r);
+    this->dnlmFilter.dnlmFilter(pSrc32fImage, stepBytesSrc, CV_32FC1, pSrc32fImage, stepBytesSrc, pFilteredImage, stepBytesFiltered, roi, wSize, wSize_n, sigma_r);
 
     //putting back everything
     //ippiMulC_32f_C1IR(scaleFactor, pFilteredImage, stepBytesFiltered, roi);
