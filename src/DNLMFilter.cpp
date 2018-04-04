@@ -2,7 +2,7 @@
 #include "DNLMFilter.hpp"
 
 // Pre-process input and select appropriate filter.
-int DNLMFilter::dnlmFilter(const Ipp32f* pSrc, int stepBytesSrc, int srcType, Ipp32f* pUSMImage, int stepByteUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
+int DNLMFilter::dnlmFilter(const Ipp32f* pSrc, int stepBytesSrc, int srcType, const Ipp32f* pUSMImage, int stepByteUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
 
     int status;
 
@@ -24,7 +24,7 @@ int DNLMFilter::dnlmFilter(const Ipp32f* pSrc, int stepBytesSrc, int srcType, Ip
 }
 
 //Implements dnlm filter for grayscale images.
-int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* pUSMImage, int stepBytesUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
+int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrc, int stepBytesSrc, const Ipp32f* pUSMImage, int stepBytesUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
     //Variable to store status
     int status, iMin, iMax, jMin, jMax;
     Ipp32f *pSrcBorder = NULL, *pSqrDist = NULL;
@@ -76,9 +76,60 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* pUSMI
         {
             
             pWindowStart = &pSrcBorder[j*(stepBytesSrcBorder/sizeof(Ipp32f))+i]; 
-            pTplStart = &pSrcBorder[(j + tplStartOffset)*(stepBytesSrcBorder/sizeof(Ipp32f))+(i + tplStartOffset)];
-            pUSMWindowStart = &pUSMImage[j*(stepBytesUSM/sizeof(Ipp32f))+i];
-            status = ippiSqrDistanceNorm_32f_C1R( pWindowStart, stepBytesSrcBorder, windowBorderSize, pTplStart, stepBytesSrcBorder, tplSize, pSqrDist, stepBytesSqrDist, normL2AlgCfg, pBuffer);
+            pNeighborhoodStartIJ = &pSrcBorder[(j + neighborhoodStartOffset)*(stepBytesSrcBorder/sizeof(Ipp32f))+(i + neighborhoodStartOffset)];
+            pUSMWindowStart = (Ipp32f *) &pUSMImage[j*(stepBytesUSM/sizeof(Ipp32f))+i];
+
+            // cout << "window : "<<endl;
+            // for (int r = 0; r < windowBorderSize.height; ++r)
+            // {
+            //     for (int s = 0; s < windowBorderSize.width; ++s)
+            //     {
+            //         cout << pWindowStart[r*(stepBytesSrcBorder/sizeof(Ipp32f)) + s] << " ";
+            //     }
+            //     cout <<endl;
+            // }
+            // cout << "IJ : "<<endl;
+            // for (int r = 0; r < neighborhoodSize.height; ++r)
+            // {
+            //     for (int s = 0; s < neighborhoodSize.width; ++s)
+            //     {
+            //         cout << pNeighborhoodStartIJ[r*(stepBytesSrcBorder/sizeof(Ipp32f)) + s] << " ";
+            //     }
+            //     cout <<endl;
+            // }
+
+            for (int n = 0; n < windowSize.height; ++n)
+            {
+                for (int m = 0; m < windowSize.width; ++m)
+                {
+                    pNeighborhoodStartNM = &pWindowStart[n * (stepBytesSrcBorder/sizeof(Ipp32f)) + m];
+
+                     // cout << "NM : " <<endl;
+                     // for (int r = 0; r < neighborhoodSize.height; ++r)
+                     // {
+                     //     for (int s = 0; s < neighborhoodSize.width; ++s)
+                     //     {
+                     //         cout << pNeighborhoodStartNM[r*(stepBytesSrcBorder/sizeof(Ipp32f)) + s] << " ";
+                     //     }
+                     //     cout <<endl;
+                     // }
+
+
+                    status = ippiNormDiff_L2_32f_C1R(pNeighborhoodStartNM, stepBytesSrcBorder, pNeighborhoodStartIJ, stepBytesSrcBorder, neighborhoodSize, &euclDistResult, ippAlgHintNone);
+                    pEuclDist[n * (stepBytesEuclDist/sizeof(Ipp32f)) + m] = (Ipp32f) euclDistResult;
+                }
+            }
+
+            // cout << "euclDistResult : "<<endl;
+            // for (int r = 0; r < windowSize.height; ++r)
+            // {
+            //     for (int s = 0; s < windowSize.width; ++s)
+            //     {
+            //         cout << pEuclDist[r*(stepBytesEuclDist/sizeof(Ipp32f)) + s] << " ";
+            //     }
+            //     cout <<endl;
+            // }
+>>>>>>> b0dd51a... make image type const to prevent modification
             
             status = ippiDivC_32f_C1IR((Ipp32f) -(sigma_r * sigma_r), pSqrDist, stepBytesSqrDist, windowSize);
             status = ippiExp_32f_C1IR(pSqrDist, stepBytesSqrDist, windowSize);
