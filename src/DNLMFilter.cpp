@@ -75,9 +75,9 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* pUSMI
         for (int i = 0; i < imageSize.width; ++i)
         {
             
-            pWindowStart = pSrcBorder + (j*(stepBytesSrcBorder/sizeof(Ipp32f))+i); 
-            pTplStart = pSrcBorder + (j + tplStartOffset)*(stepBytesSrcBorder/sizeof(Ipp32f))+(i + tplStartOffset);
-            pUSMWindowStart = pUSMImage + (j*(stepBytesUSM/sizeof(Ipp32f))+i);
+            pWindowStart = &pSrcBorder[j*(stepBytesSrcBorder/sizeof(Ipp32f))+i]; 
+            pTplStart = &pSrcBorder[(j + tplStartOffset)*(stepBytesSrcBorder/sizeof(Ipp32f))+(i + tplStartOffset)];
+            pUSMWindowStart = &pUSMImage[j*(stepBytesUSM/sizeof(Ipp32f))+i];
             status = ippiSqrDistanceNorm_32f_C1R( pWindowStart, stepBytesSrcBorder, windowBorderSize, pTplStart, stepBytesSrcBorder, tplSize, pSqrDist, stepBytesSqrDist, normL2AlgCfg, pBuffer);
             
             status = ippiDivC_32f_C1IR((Ipp32f) -(sigma_r * sigma_r), pSqrDist, stepBytesSqrDist, windowSize);
