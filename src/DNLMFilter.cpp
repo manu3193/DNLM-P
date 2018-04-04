@@ -2,7 +2,7 @@
 #include "DNLMFilter.hpp"
 
 // Pre-process input and select appropriate filter.
-int DNLMFilter::dnlmFilter(const Ipp32f* pSrc, int stepBytesSrc, int srcType, Ipp32f* pUSMImage, int stepByteUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
+int DNLMFilter::dnlmFilter(const Ipp32f* pSrc, int stepBytesSrc, int srcType, const Ipp32f* pUSMImage, int stepByteUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
 
     int status;
 
@@ -24,7 +24,7 @@ int DNLMFilter::dnlmFilter(const Ipp32f* pSrc, int stepBytesSrc, int srcType, Ip
 }
 
 //Implements dnlm filter for grayscale images.
-int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* pUSMImage, int stepBytesUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
+int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrc, int stepBytesSrc, const Ipp32f* pUSMImage, int stepBytesUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
     //Variable to store status
     int status, iMin, iMax, jMin, jMax;
     Ipp32f *pSrcBorder = NULL, *pSqrDist = NULL;
@@ -77,7 +77,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* pUSMI
             
             pWindowStart = &pSrcBorder[j*(stepBytesSrcBorder/sizeof(Ipp32f))+i]; 
             pTplStart = &pSrcBorder[(j + tplStartOffset)*(stepBytesSrcBorder/sizeof(Ipp32f))+(i + tplStartOffset)];
-            pUSMWindowStart = &pUSMImage[j*(stepBytesUSM/sizeof(Ipp32f))+i];
+            pUSMWindowStart = (Ipp32f *) &pUSMImage[j*(stepBytesUSM/sizeof(Ipp32f))+i];
             status = ippiSqrDistanceNorm_32f_C1R( pWindowStart, stepBytesSrcBorder, windowBorderSize, pTplStart, stepBytesSrcBorder, tplSize, pSqrDist, stepBytesSqrDist, normL2AlgCfg, pBuffer);
             
             status = ippiDivC_32f_C1IR((Ipp32f) -(sigma_r * sigma_r), pSqrDist, stepBytesSqrDist, windowSize);
