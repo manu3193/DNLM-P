@@ -36,6 +36,10 @@ int main(int argc, char* argv[]){
 
     //Write image to output file.
     imwrite(outputFile, outputImage);
+
+    //Release object memory
+    inputImage.release();
+    outputImage.release();
     
     return 0;
     }
