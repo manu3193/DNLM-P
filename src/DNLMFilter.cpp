@@ -2,20 +2,20 @@
 #include "DNLMFilter.hpp"
 
 // Pre-process input and select appropriate filter.
-int DNLMFilter::dnlmFilter(const Ipp32f* pSrc, int stepBytesSrc, int srcType, const Ipp32f* pUSMImage, int stepByteUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
+int DNLMFilter::dnlmFilter(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, int srcType, const Ipp32f* pUSMImage, int stepByteUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
 
     int status;
 
      if (srcType == CV_32FC3){
     
         //apply DNLM for color images   
-        //status = this->dnlmFilter(pSrc, stepBytesSrc, pUSMImage, stepByteUSM, pDst, stepBytesDst, imageSize, w, w_n, sigma_r);
+        //status = this->dnlmFilter(pSrcBorder, stepBytesSrc, pUSMImage, stepByteUSM, pDst, stepBytesDst, imageSize, w, w_n, sigma_r);
 
      }
 
     else if (srcType == CV_32FC1 ){
         //apply DNLM for grayscale images   
-        status = this->dnlmFilterBW(pSrc, stepBytesSrc, pUSMImage, stepByteUSM, pDst, stepBytesDst, imageSize, w, w_n, sigma_r);
+        status = this->dnlmFilterBW(pSrcBorder, stepBytesSrcBorder, pUSMImage, stepByteUSM, pDst, stepBytesDst, imageSize, w, w_n, sigma_r);
     }
     
     else
@@ -24,70 +24,58 @@ int DNLMFilter::dnlmFilter(const Ipp32f* pSrc, int stepBytesSrc, int srcType, co
 }
 
 //Implements dnlm filter for grayscale images.
-int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrc, int stepBytesSrc, const Ipp32f* pUSMImage, int stepBytesUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
+int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, const Ipp32f* pUSMImage, int stepBytesUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
     //Variable to store status
     int status, iMin, iMax, jMin, jMax;
-    Ipp32f *pSrcBorder = NULL, *pSqrDist = NULL;
-    int stepBytesSrcBorder = 0, stepBytesSqrDist = 0;
-    //Configuration of the distance calculation algorthm
-    IppEnum normL2AlgCfg = (IppEnum)(ippAlgAuto | ippiNormNone | ippiROIValid);
-    Ipp8u *pBuffer;
-    int bufSize=0;
+    Ipp32f *pEuclDist = NULL;
+    int stepBytesEuclDist = 0;
+
     //Variable to store summation result of filter response dor normalization
-    Ipp64f sumExpTerm = 0, filterResult = 0;
+    Ipp64f sumExpTerm = 0, filterResult = 0, euclDistResult = 0;
 
     //Compute border offset for border replicated image
     int windowTopLeftOffset = floor(w_n/2);
     int imageTopLeftOffset = floor(w/2) + windowTopLeftOffset;
-    int tplStartOffset = imageTopLeftOffset - floor(w_n/2);
-
-    IppiSize imageBorderSize = {imageSize.width + 2*imageTopLeftOffset, imageSize.height + 2*imageTopLeftOffset};
+    int neighborhoodStartOffset = imageTopLeftOffset - floor(w_n/2);
 
     //Compute the sliding window size
     IppiSize windowSize = {w, w};
     IppiSize windowBorderSize = {w + 2*windowTopLeftOffset, w + 2*windowTopLeftOffset};
-    IppiSize tplSize = {w_n, w_n};
+    IppiSize neighborhoodSize = {w_n, w_n};
 
 
-    //Allocate memory for image with borders
-    pSrcBorder = ippiMalloc_32f_C1(imageBorderSize.width, imageBorderSize.height, &stepBytesSrcBorder);
     //Allocate memory for sqrtDist matrix
-    pSqrDist = ippiMalloc_32f_C1(windowSize.width, windowSize.height, &stepBytesSqrDist);
+    pEuclDist = ippiMalloc_32f_C1(windowSize.width, windowSize.height, &stepBytesEuclDist);
 
-    // Replicate border for full image filtering
-    status = ippiCopyReplicateBorder_32f_C1R(pSrc, stepBytesSrc, imageSize, pSrcBorder, stepBytesSrcBorder, imageBorderSize, imageTopLeftOffset, imageTopLeftOffset);
+    Ipp32f *pWindowStart, *pNeighborhoodStartIJ, *pNeighborhoodStartNM, *pUSMWindowStart;
 
-    //Configure sqrDist template matching algorithm
-    status = ippiSqrDistanceNormGetBufferSize(windowBorderSize, tplSize, normL2AlgCfg, &bufSize);
-    //Allocate buffer for template matching algorithm
-    pBuffer = ippsMalloc_8u( bufSize );
-
-    Ipp32f *pWindowStart, *pTplStart, *pUSMWindowStart;
-
-    cout << "Image H: "<< imageSize.height << " W: " << imageSize.width <<endl;
-    cout << "Image w/border H: "<< imageBorderSize.height << " W: " << imageBorderSize.width <<endl;
+    
     cout << "Window H: "<< windowSize.height << " W: " << windowSize.width <<endl;
     cout << "Window w/border H: "<< windowBorderSize.height << " W: " << windowBorderSize.width <<endl;
-    cout << "Patch H: "<< tplSize.height << " W: " << tplSize.width <<endl;
+    cout << "Neighborhood H: "<< neighborhoodSize.height << " W: " << neighborhoodSize.width <<endl;
 
     for (int j = 0; j < imageSize.height; ++j)
     {
+        const int indexPdstBase = j*(stepBytesDst/sizeof(Ipp32f));
+        const int indexWindowStartBase = j*(stepBytesSrcBorder/sizeof(Ipp32f));
+        const int indexNeighborIJBase = (j + neighborhoodStartOffset)*(stepBytesSrcBorder/sizeof(Ipp32f));
+        const int indexUSMWindowBase =(j + windowTopLeftOffset)*(stepBytesUSM/sizeof(Ipp32f));
+
         for (int i = 0; i < imageSize.width; ++i)
         {
-            
             pWindowStart = &pSrcBorder[j*(stepBytesSrcBorder/sizeof(Ipp32f))+i]; 
             pTplStart = &pSrcBorder[(j + tplStartOffset)*(stepBytesSrcBorder/sizeof(Ipp32f))+(i + tplStartOffset)];
             pUSMWindowStart = (Ipp32f *) &pUSMImage[j*(stepBytesUSM/sizeof(Ipp32f))+i];
             status = ippiSqrDistanceNorm_32f_C1R( pWindowStart, stepBytesSrcBorder, windowBorderSize, pTplStart, stepBytesSrcBorder, tplSize, pSqrDist, stepBytesSqrDist, normL2AlgCfg, pBuffer);
             
-            status = ippiDivC_32f_C1IR((Ipp32f) -(sigma_r * sigma_r), pSqrDist, stepBytesSqrDist, windowSize);
-            status = ippiExp_32f_C1IR(pSqrDist, stepBytesSqrDist, windowSize);
-            status = ippiSum_32f_C1R(pSqrDist, stepBytesSqrDist, windowSize, &sumExpTerm, ippAlgHintNone);
-            status = ippiMul_32f_C1IR(pUSMWindowStart, stepBytesUSM, pSqrDist, stepBytesSqrDist, windowSize);
-            status = ippiDivC_32f_C1IR(sumExpTerm, pSqrDist, stepBytesSqrDist, windowSize);
-            status = ippiSum_32f_C1R(pSqrDist, stepBytesSqrDist, windowSize, &filterResult, ippAlgHintNone);
+            status = ippiDivC_32f_C1IR((Ipp32f) -(sigma_r * sigma_r), pEuclDist, stepBytesEuclDist, windowSize);
+            status = ippiExp_32f_C1IR(pEuclDist, stepBytesEuclDist, windowSize);
+            status = ippiSum_32f_C1R(pEuclDist, stepBytesEuclDist, windowSize, &sumExpTerm, ippAlgHintNone);
+            status = ippiMul_32f_C1IR(pUSMWindowStart, stepBytesUSM, pEuclDist, stepBytesEuclDist, windowSize);
+            status = ippiSum_32f_C1R(pEuclDist, stepBytesEuclDist, windowSize, &filterResult, ippAlgHintNone);
 
-            pDst[i*(stepBytesDst/sizeof(Ipp32f))+j] = (Ipp32f) filterResult;
+            pDst[indexPdstBase+i] = (Ipp32f) (filterResult/ sumExpTerm);
+            //cout << pDst[j*(stepBytesDst/sizeof(Ipp32f))+i] << " ";
 
             if(status!=ippStsNoErr) cout << "Error " << status << endl;
 
@@ -95,9 +83,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrc, int stepBytesSrc, const Ipp32f*
     }
 
 
-    ippiFree(pSrcBorder);
-    ippiFree(pSqrDist);
-    ippsFree(pBuffer);
+    ippiFree(pEuclDist);
 
     return 1;
     

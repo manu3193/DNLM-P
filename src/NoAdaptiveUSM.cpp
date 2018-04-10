@@ -3,7 +3,7 @@
 
 
 
-int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* pDst, int stepBytesDst, IppiSize roiSize, float sigma, float lambda,  int kernelLen){
+int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* pDst, int stepBytesDst, const IppiSize roiSize, const float sigma, const float lambda, const int kernelLen){
 	
 	if (pSrc == NULL || pDst == NULL)
 	{
@@ -18,9 +18,9 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* p
     int iTmpBufSize = 0, iSpecSize = 0;   /* Common work buffer size */
     IppiBorderType borderType = ippBorderRepl;
     Ipp32f borderValue = 0.0;
-    IppiSize  kernelSize = { kernelLen, kernelLen };
+    const IppiSize  kernelSize = { kernelLen, kernelLen };
     //Apply USM only in L component of Lab colorspase. Working with grayscale at the momment. 
-    int numChannels = 1;
+    const int numChannels = 1;
     //Step in bytes of images
     int stepBytesFiltered = 0;
     int stepBytesAbs = 0;
@@ -101,16 +101,16 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* p
  *
  * @return     returns simple error code at the momment: 1 if success, any other number means error. 
  */
-int NoAdaptiveUSM::generateLoGKernel(int size, float sigma, Ipp32f* pKernel ){
+int NoAdaptiveUSM::generateLoGKernel(const int size,const float sigma, Ipp32f* pKernel ){
 	
 	IppStatus status = ippStsNoErr;
 	Ipp32f sumExpTerm = 0;
 	Ipp64f sumLaplTerm = 0;
-	int halfSize  = (size - 1) / 2;
+	const int halfSize  = (size - 1) / 2;
 	int stepBytesRadXY = 0;
 	int stepBytesExpTerm = 0;
     int stepBytesLaplTerm = 0;
-	Ipp32f std2 = (Ipp32f) sigma*sigma;
+	const Ipp32f std2 = (Ipp32f) sigma*sigma;
 	Ipp32f expMin, expMax;
 	IppiSize roiSize;
     roiSize.width = size;
@@ -123,19 +123,19 @@ int NoAdaptiveUSM::generateLoGKernel(int size, float sigma, Ipp32f* pKernel ){
 	//Copy Dst buffer dir to pointer for laplacian term. 
 	Ipp32f* pLaplTerm =  ippiMalloc_32f_C1(size, size, &stepBytesLaplTerm);
 
-	int indexRadXY = 0;
-	int indexExpTerm = 0;
 	for (int j = 0; j < size; ++j)
 	{
+        const int indexRadXY = j*(stepBytesRadXY/sizeof(Ipp32f));
+        const int indexExpTerm = j*(stepBytesExpTerm/sizeof(Ipp32f));
+        const Ipp32f x_quad = (j - halfSize) * (j - halfSize);
+
 		for (int i = 0; i < size; ++i)
 		{
-			indexRadXY = j*(stepBytesRadXY/sizeof(Ipp32f)) + i;
-			indexExpTerm = j*(stepBytesExpTerm/sizeof(Ipp32f)) + i;
 			//Compute radial distance term (x*x + y*y) and exponential term
-			pRadXY[indexRadXY] = (Ipp32f) ((j - halfSize) * (j - halfSize) + (i - halfSize) * (i - halfSize));
-			pExpTerm[indexExpTerm] = (Ipp32f) exp(pRadXY[indexRadXY] / (-2*std2));
+			pRadXY[indexRadXY + i] = (Ipp32f) ( x_quad + (i - halfSize) * (i - halfSize));
+			pExpTerm[indexExpTerm + i] = (Ipp32f) exp(pRadXY[indexRadXY + i] / (-2*std2));
 			//Store summation of the exponential result to normalize it
-			sumExpTerm += pExpTerm[indexExpTerm];
+			sumExpTerm += pExpTerm[indexExpTerm + i];
 		}
 	}
 
@@ -160,9 +160,11 @@ int NoAdaptiveUSM::generateLoGKernel(int size, float sigma, Ipp32f* pKernel ){
 
     for (int j = 0; j < size; ++j)
     {
+        const int indexBaseLaplTerm = j*(stepBytesLaplTerm/sizeof(Ipp32f));
+        const int indexBaseKernel = j*(size);
         for (int i = 0; i < size; ++i)
         {
-            pKernel[j*(size)+i] = -pLaplTerm[j*(stepBytesLaplTerm/sizeof(Ipp32f)) + i];
+            pKernel[indexBaseKernel+i] = -pLaplTerm[indexBaseLaplTerm + i];
         }
     }
 
