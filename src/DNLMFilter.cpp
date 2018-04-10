@@ -74,12 +74,17 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrc, int stepBytesSrc, const Ipp32f*
 
     for (int j = 0; j < imageSize.height; ++j)
     {
+        const int indexPdstBase = j*(stepBytesDst/sizeof(Ipp32f));
+        const int indexWindowStartBase = j*(stepBytesSrcBorder/sizeof(Ipp32f));
+        const int indexNeighborIJBase = (j + neighborhoodStartOffset)*(stepBytesSrcBorder/sizeof(Ipp32f));
+        const int indexUSMWindowBase =j*(stepBytesUSM/sizeof(Ipp32f));
+
         for (int i = 0; i < imageSize.width; ++i)
         {
             
-            pWindowStart = &pSrcBorder[j*(stepBytesSrcBorder/sizeof(Ipp32f))+i]; 
-            pNeighborhoodStartIJ = &pSrcBorder[(j + neighborhoodStartOffset)*(stepBytesSrcBorder/sizeof(Ipp32f))+(i + neighborhoodStartOffset)];
-            pUSMWindowStart = (Ipp32f *) &pUSMImage[j*(stepBytesUSM/sizeof(Ipp32f))+i];
+            pWindowStart = &pSrcBorder[indexWindowStartBase+i]; 
+            pNeighborhoodStartIJ = &pSrcBorder[indexNeighborIJBase + (i + neighborhoodStartOffset)];
+            pUSMWindowStart = (Ipp32f *) &pUSMImage[indexUSMWindowBase+i];
 
             // cout << "window : "<<endl;
             // for (int r = 0; r < windowBorderSize.height; ++r)
@@ -102,9 +107,12 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrc, int stepBytesSrc, const Ipp32f*
 
             for (int n = 0; n < windowSize.height; ++n)
             {
+                const int indexEuclDistBase = n * (stepBytesEuclDist/sizeof(Ipp32f));
+                const int indexNeighborNMBase = n * (stepBytesSrcBorder/sizeof(Ipp32f));
+
                 for (int m = 0; m < windowSize.width; ++m)
                 {
-                    pNeighborhoodStartNM = &pWindowStart[n * (stepBytesSrcBorder/sizeof(Ipp32f)) + m];
+                    pNeighborhoodStartNM = &pWindowStart[indexNeighborNMBase + m];
 
                      // cout << "NM : " <<endl;
                      // for (int r = 0; r < neighborhoodSize.height; ++r)
@@ -118,7 +126,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrc, int stepBytesSrc, const Ipp32f*
 
 
                     status = ippiNormDiff_L2_32f_C1R(pNeighborhoodStartNM, stepBytesSrcBorder, pNeighborhoodStartIJ, stepBytesSrcBorder, neighborhoodSize, &euclDistResult, ippAlgHintNone);
-                    pEuclDist[n * (stepBytesEuclDist/sizeof(Ipp32f)) + m] = (Ipp32f) euclDistResult;
+                    pEuclDist[indexEuclDistBase + m] = (Ipp32f) euclDistResult;
                 }
             }
 
@@ -138,7 +146,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrc, int stepBytesSrc, const Ipp32f*
             status = ippiMul_32f_C1IR(pUSMWindowStart, stepBytesUSM, pEuclDist, stepBytesEuclDist, windowSize);
             status = ippiSum_32f_C1R(pEuclDist, stepBytesEuclDist, windowSize, &filterResult, ippAlgHintNone);
 
-            pDst[j*(stepBytesDst/sizeof(Ipp32f))+i] = (Ipp32f) (filterResult/ sumExpTerm);
+            pDst[indexPdstBase+i] = (Ipp32f) (filterResult/ sumExpTerm);
             //cout << pDst[j*(stepBytesDst/sizeof(Ipp32f))+i] << " ";
 
             if(status!=ippStsNoErr) cout << "Error " << status << endl;
