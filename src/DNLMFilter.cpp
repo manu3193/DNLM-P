@@ -63,64 +63,10 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
 
         for (int i = 0; i < imageSize.width; ++i)
         {
-            
-            pWindowStart = (Ipp32f *) &pSrcBorder[indexWindowStartBase+i]; 
-            pNeighborhoodStartIJ = (Ipp32f *) &pSrcBorder[indexNeighborIJBase + (i + neighborhoodStartOffset)];
-            pUSMWindowStart = (Ipp32f *) &pUSMImage[indexUSMWindowBase+(i + windowTopLeftOffset)];
-
-            // cout << "window : "<<endl;
-            // for (int r = 0; r < windowBorderSize.height; ++r)
-            // {
-            //     for (int s = 0; s < windowBorderSize.width; ++s)
-            //     {
-            //         cout << pWindowStart[r*(stepBytesSrcBorder/sizeof(Ipp32f)) + s] << " ";
-            //     }
-            //     cout <<endl;
-            // }
-            // cout << "IJ : "<<endl;
-            // for (int r = 0; r < neighborhoodSize.height; ++r)
-            // {
-            //     for (int s = 0; s < neighborhoodSize.width; ++s)
-            //     {
-            //         cout << pNeighborhoodStartIJ[r*(stepBytesSrcBorder/sizeof(Ipp32f)) + s] << " ";
-            //     }
-            //     cout <<endl;
-            // }
-
-            for (int n = 0; n < windowSize.height; ++n)
-            {
-                const int indexEuclDistBase = n * (stepBytesEuclDist/sizeof(Ipp32f));
-                const int indexNeighborNMBase = n * (stepBytesSrcBorder/sizeof(Ipp32f));
-
-                for (int m = 0; m < windowSize.width; ++m)
-                {
-                    pNeighborhoodStartNM = &pWindowStart[indexNeighborNMBase + m];
-
-                     /*cout << "NM : " <<endl;
-                     for (int r = 0; r < neighborhoodSize.height; ++r)
-                     {
-                         for (int s = 0; s < neighborhoodSize.width; ++s)
-                         {
-                             cout << pNeighborhoodStartNM[r*(stepBytesSrcBorder/sizeof(Ipp32f)) + s] << " ";
-                         }
-                         cout <<endl;
-                     }*/
-
-
-                    status = ippiNormDiff_L2_32f_C1R(pNeighborhoodStartNM, stepBytesSrcBorder, pNeighborhoodStartIJ, stepBytesSrcBorder, neighborhoodSize, &euclDistResult, ippAlgHintNone);
-                    pEuclDist[indexEuclDistBase + m] = (Ipp32f) euclDistResult;
-                }
-            }
-
-            // cout << "euclDistResult : "<<endl;
-            // for (int r = 0; r < windowSize.height; ++r)
-            // {
-            //     for (int s = 0; s < windowSize.width; ++s)
-            //     {
-            //         cout << pEuclDist[r*(stepBytesEuclDist/sizeof(Ipp32f)) + s] << " ";
-            //     }
-            //     cout <<endl;
-            // }
+            pWindowStart = &pSrcBorder[j*(stepBytesSrcBorder/sizeof(Ipp32f))+i]; 
+            pTplStart = &pSrcBorder[(j + tplStartOffset)*(stepBytesSrcBorder/sizeof(Ipp32f))+(i + tplStartOffset)];
+            pUSMWindowStart = (Ipp32f *) &pUSMImage[j*(stepBytesUSM/sizeof(Ipp32f))+i];
+            status = ippiSqrDistanceNorm_32f_C1R( pWindowStart, stepBytesSrcBorder, windowBorderSize, pTplStart, stepBytesSrcBorder, tplSize, pSqrDist, stepBytesSqrDist, normL2AlgCfg, pBuffer);
             
             status = ippiDivC_32f_C1IR((Ipp32f) -(sigma_r * sigma_r), pEuclDist, stepBytesEuclDist, windowSize);
             status = ippiExp_32f_C1IR(pEuclDist, stepBytesEuclDist, windowSize);
