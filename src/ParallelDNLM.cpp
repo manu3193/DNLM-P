@@ -49,12 +49,12 @@ int main(int argc, char* argv[]){
 
 Mat ParallelDNLM::processImage(const Mat& inputImage){
     //Set parameters for processing
-    int wRSize = 10;
-    int wSize_n=3;
+    int wRSize = 21;
+    int wSize_n=7;
     float kernelStd = 0.001f;
-    int kernelLen = 19;
-    float sigma_r = 1.5f; //13
-    float lambda = 2.0f;
+    int kernelLen = 21;
+    float sigma_r = 0.5f; //13
+    float lambda = 3.0f;
     
     Mat fDeceivedNLM = filterDNLM(inputImage, wRSize, wSize_n, sigma_r, lambda, kernelLen, kernelStd);
 
@@ -96,7 +96,10 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     const int windowTopLeftOffset = floor(wSize_n/2);
     const int imageTopLeftOffset = floor(wSize/2) + windowTopLeftOffset;
 
-    imageROIwBorderSize = {imageROISize.width + 2*imageTopLeftOffset, imageROISize.height + 2*imageTopLeftOffset};                         
+    imageROIwBorderSize = {imageROISize.width + 2*imageTopLeftOffset, imageROISize.height + 2*imageTopLeftOffset};     
+
+    cout << "Image H: "<< imageROISize.height << " W: " << imageROISize.width <<endl;
+    cout << "Image w/border H: "<< imageROIwBorderSize.height << " W: " << imageROIwBorderSize.width <<endl;                    
 
     //Allocate memory for images
     pSrc32fImage = ippiMalloc_32f_C1(imageROISize.width, imageROISize.height, &stepBytesSrc); 
@@ -111,6 +114,21 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
 
     // Mirror border for full image filtering
     status = ippiCopyMirrorBorder_32f_C1R(pSrc32fImage, stepBytesSrc, imageROISize, pSrcwBorderImage, stepBytesSrcwBorder, imageROIwBorderSize, imageTopLeftOffset, imageTopLeftOffset);
+
+    ///////
+    //DEBUG
+    ///////
+    /*cout << "image : "<<endl;
+    for (int r = 0; r < imageROIwBorderSize.height; ++r)
+    {
+        for (int s = 0; s < imageROIwBorderSize.width; ++s)
+        {
+            cout << pSrcwBorderImage[r*(stepBytesSrcwBorder/sizeof(Ipp32f)) + s] << " ";
+        }
+        cout <<endl;
+    }*/
+    ////////
+    ////////
 
     this->noAdaptiveUSM.noAdaptiveUSM(pSrcwBorderImage, stepBytesSrcwBorder, pUSMImage, stepBytesUSM, imageROIwBorderSize, kernelStd, lambda, kernelLen);
     this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pUSMImage, stepBytesUSM, pFilteredImage, stepBytesFiltered, imageROISize, wSize, wSize_n, sigma_r);

@@ -49,35 +49,24 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
 
     Ipp32f *pWindowStart, *pNeighborhoodStartIJ, *pNeighborhoodStartNM, *pUSMWindowStart;
 
-    /*cout << "Image H: "<< imageSize.height << " W: " << imageSize.width <<endl;
-    cout << "Image w/border H: "<< imageBorderSize.height << " W: " << imageWBorderSize.width <<endl;
+    
     cout << "Window H: "<< windowSize.height << " W: " << windowSize.width <<endl;
     cout << "Window w/border H: "<< windowBorderSize.height << " W: " << windowBorderSize.width <<endl;
-    cout << "Neighborhood H: "<< neighborhoodSize.height << " W: " << neighborhoodSize.width <<endl;*/
-
-    // cout << "image : "<<endl;
-    // for (int r = 0; r < imageBorderSize.height; ++r)
-    // {
-    //     for (int s = 0; s < imageBorderSize.width; ++s)
-    //     {
-    //         cout << pSrcBorder[r*(stepBytesSrcBorder/sizeof(Ipp32f)) + s] << " ";
-    //     }
-    //     cout <<endl;
-    // }
+    cout << "Neighborhood H: "<< neighborhoodSize.height << " W: " << neighborhoodSize.width <<endl;
 
     for (int j = 0; j < imageSize.height; ++j)
     {
         const int indexPdstBase = j*(stepBytesDst/sizeof(Ipp32f));
         const int indexWindowStartBase = j*(stepBytesSrcBorder/sizeof(Ipp32f));
         const int indexNeighborIJBase = (j + neighborhoodStartOffset)*(stepBytesSrcBorder/sizeof(Ipp32f));
-        const int indexUSMWindowBase =j*(stepBytesUSM/sizeof(Ipp32f));
+        const int indexUSMWindowBase =(j + windowTopLeftOffset)*(stepBytesUSM/sizeof(Ipp32f));
 
         for (int i = 0; i < imageSize.width; ++i)
         {
             
             pWindowStart = (Ipp32f *) &pSrcBorder[indexWindowStartBase+i]; 
             pNeighborhoodStartIJ = (Ipp32f *) &pSrcBorder[indexNeighborIJBase + (i + neighborhoodStartOffset)];
-            pUSMWindowStart = (Ipp32f *) &pUSMImage[indexUSMWindowBase+i];
+            pUSMWindowStart = (Ipp32f *) &pUSMImage[indexUSMWindowBase+(i + windowTopLeftOffset)];
 
             // cout << "window : "<<endl;
             // for (int r = 0; r < windowBorderSize.height; ++r)
@@ -107,15 +96,15 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                 {
                     pNeighborhoodStartNM = &pWindowStart[indexNeighborNMBase + m];
 
-                     // cout << "NM : " <<endl;
-                     // for (int r = 0; r < neighborhoodSize.height; ++r)
-                     // {
-                     //     for (int s = 0; s < neighborhoodSize.width; ++s)
-                     //     {
-                     //         cout << pNeighborhoodStartNM[r*(stepBytesSrcBorder/sizeof(Ipp32f)) + s] << " ";
-                     //     }
-                     //     cout <<endl;
-                     // }
+                     /*cout << "NM : " <<endl;
+                     for (int r = 0; r < neighborhoodSize.height; ++r)
+                     {
+                         for (int s = 0; s < neighborhoodSize.width; ++s)
+                         {
+                             cout << pNeighborhoodStartNM[r*(stepBytesSrcBorder/sizeof(Ipp32f)) + s] << " ";
+                         }
+                         cout <<endl;
+                     }*/
 
 
                     status = ippiNormDiff_L2_32f_C1R(pNeighborhoodStartNM, stepBytesSrcBorder, pNeighborhoodStartIJ, stepBytesSrcBorder, neighborhoodSize, &euclDistResult, ippAlgHintNone);
