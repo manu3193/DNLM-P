@@ -127,11 +127,12 @@ int NoAdaptiveUSM::generateLoGKernel(const int size,const float sigma, Ipp32f* p
 	{
         const int indexRadXY = j*(stepBytesRadXY/sizeof(Ipp32f));
         const int indexExpTerm = j*(stepBytesExpTerm/sizeof(Ipp32f));
+        const Ipp32f x_quad = (j - halfSize) * (j - halfSize);
 
 		for (int i = 0; i < size; ++i)
 		{
 			//Compute radial distance term (x*x + y*y) and exponential term
-			pRadXY[indexRadXY + i] = (Ipp32f) ((j - halfSize) * (j - halfSize) + (i - halfSize) * (i - halfSize));
+			pRadXY[indexRadXY + i] = (Ipp32f) ( x_quad + (i - halfSize) * (i - halfSize));
 			pExpTerm[indexExpTerm + i] = (Ipp32f) exp(pRadXY[indexRadXY + i] / (-2*std2));
 			//Store summation of the exponential result to normalize it
 			sumExpTerm += pExpTerm[indexExpTerm + i];
