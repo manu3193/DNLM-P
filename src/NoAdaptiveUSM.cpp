@@ -159,9 +159,11 @@ int NoAdaptiveUSM::generateLoGKernel(const int size,const float sigma, Ipp32f* p
 
     for (int j = 0; j < size; ++j)
     {
+        const int indexBaseLaplTerm = j*(stepBytesLaplTerm/sizeof(Ipp32f));
+        const int indexBaseKernel = j*(size);
         for (int i = 0; i < size; ++i)
         {
-            pKernel[j*(size)+i] = -pLaplTerm[j*(stepBytesLaplTerm/sizeof(Ipp32f)) + i];
+            pKernel[indexBaseKernel+i] = -pLaplTerm[indexBaseLaplTerm + i];
         }
     }
 
