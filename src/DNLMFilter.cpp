@@ -2,7 +2,7 @@
 #include "DNLMFilter.hpp"
 
 // Pre-process input and select appropriate filter.
-int DNLMFilter::dnlmFilter(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, int srcType, const Ipp32f* pUSMImage, int stepByteUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
+int DNLMFilter::dnlmFilter(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, int srcType, const Ipp32f* pUSMImage, int stepByteUSM,  const Ipp32f* pSqrIntegralImage, int stepBytesSqrIntegral, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
 
     int status;
 
@@ -15,7 +15,7 @@ int DNLMFilter::dnlmFilter(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, int
 
     else if (srcType == CV_32FC1 ){
         //apply DNLM for grayscale images   
-        status = this->dnlmFilterBW(pSrcBorder, stepBytesSrcBorder, pUSMImage, stepByteUSM, pDst, stepBytesDst, imageSize, w, w_n, sigma_r);
+        status = this->dnlmFilterBW(pSrcBorder, stepBytesSrcBorder, pUSMImage, stepByteUSM, pSqrIntegralImage, stepBytesSqrIntegral, pDst, stepBytesDst, imageSize, w, w_n, sigma_r);
     }
     
     else
@@ -24,7 +24,7 @@ int DNLMFilter::dnlmFilter(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, int
 }
 
 //Implements dnlm filter for grayscale images.
-int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, const Ipp32f* pUSMImage, int stepBytesUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
+int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, const Ipp32f* pUSMImage, int stepBytesUSM, const Ipp32f* pSqrIntegralImage, int stepBytesSqrIntegral, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
     //Variable to store status
     int status, iMin, iMax, jMin, jMax;
     Ipp32f *pEuclDist = NULL;
@@ -47,7 +47,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
     //Allocate memory for sqrtDist matrix
     pEuclDist = ippiMalloc_32f_C1(windowSize.width, windowSize.height, &stepBytesEuclDist);
 
-    Ipp32f *pWindowStart, *pNeighborhoodStartIJ, *pNeighborhoodStartNM, *pUSMWindowStart;
+    Ipp32f *pWindowStart, *pNeighborhoodStartIJ, *pUSMWindowStart;
 
     
     cout << "Window H: "<< windowSize.height << " W: " << windowSize.width <<endl;
@@ -63,10 +63,10 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
 
         for (int i = 0; i < imageSize.width; ++i)
         {
-            pWindowStart = &pSrcBorder[j*(stepBytesSrcBorder/sizeof(Ipp32f))+i]; 
-            pTplStart = &pSrcBorder[(j + tplStartOffset)*(stepBytesSrcBorder/sizeof(Ipp32f))+(i + tplStartOffset)];
-            pUSMWindowStart = (Ipp32f *) &pUSMImage[j*(stepBytesUSM/sizeof(Ipp32f))+i];
-            status = ippiSqrDistanceNorm_32f_C1R( pWindowStart, stepBytesSrcBorder, windowBorderSize, pTplStart, stepBytesSrcBorder, tplSize, pSqrDist, stepBytesSqrDist, normL2AlgCfg, pBuffer);
+            pWindowStart = &pSrcBorder[indexWindowStartBase + i]; 
+            pNeighborhoodStartIJ = &pSrcBorder[indexNeighborIJBase + (i + neighborhoodStartOffset)];
+            pUSMWindowStart = (Ipp32f *) &pUSMImage[indexUSMWindowBase + i];
+            status = ippiSqrDistanceNorm_32f_C1R( pWindowStart, stepBytesSrcBorder, windowBorderSize, pTplStart, stepBytesSrcBorder, tplSize, pEuclDist, stepBytesEuclDist, normL2AlgCfg, pBuffer);
             
             status = ippiDivC_32f_C1IR((Ipp32f) -(sigma_r * sigma_r), pEuclDist, stepBytesEuclDist, windowSize);
             status = ippiExp_32f_C1IR(pEuclDist, stepBytesEuclDist, windowSize);
