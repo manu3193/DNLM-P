@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <string>
+#include <ippcv.h>
 #include <DNLMFilter.hpp>
 #include <NoAdaptiveUSM.hpp>
 

@@ -49,10 +49,10 @@ int main(int argc, char* argv[]){
 
 Mat ParallelDNLM::processImage(const Mat& inputImage){
     //Set parameters for processing
-    int wRSize = 21;
-    int wSize_n=7;
+    int wRSize = 7;
+    int wSize_n=3;
     float kernelStd = 0.001f;
-    int kernelLen = 21;
+    int kernelLen = 7;
     float sigma_r = 0.5f; //13
     float lambda = 3.0f;
     
@@ -86,7 +86,7 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     Mat outputImage = Mat(srcImage.size(), srcImage.type());
 
     //Variables used for image format conversion
-    IppiSize imageROISize, imageROIwBorderSize;
+    IppiSize imageROISize, imageROIwBorderSize, imageROIwBorderIISize;
     imageROISize.width = srcImage.size().width;
     imageROISize.height = srcImage.size().height;
 
@@ -99,15 +99,16 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     const int imageTopLeftOffset = floor(wSize/2) + windowTopLeftOffset;
 
     imageROIwBorderSize = {imageROISize.width + 2*imageTopLeftOffset, imageROISize.height + 2*imageTopLeftOffset};     
-
-    cout << "Image H: "<< imageROISize.height << " W: " << imageROISize.width <<endl;
-    cout << "Image w/border H: "<< imageROIwBorderSize.height << " W: " << imageROIwBorderSize.width <<endl;                    
+    imageROIwBorderIISize = {imageROIwBorderSize.width + 1, imageROIwBorderSize.height + 1}; 
+    
+    //cout << "Image H: "<< imageROISize.height << " W: " << imageROISize.width <<endl;
+    //cout << "Image w/border H: "<< imageROIwBorderSize.height << " W: " << imageROIwBorderSize.width <<endl;                    
 
     //Allocate memory for images
     pSrc32fImage = ippiMalloc_32f_C1(imageROISize.width, imageROISize.height, &stepBytesSrc); 
     pSrcwBorderImage = ippiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesSrcwBorder);
     pSqrBorderImage = ippiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesSrcSqr);
-    pSqrIntegralImage = ippiMalloc_32f_C1(imageROIwBorderSize.width + 1, imageROIwBorderSize.height + 1, &stepBytesSqrIntegral);
+    pSqrIntegralImage = ippiMalloc_32f_C1(imageROIwBorderIISize.width, imageROIwBorderIISize.height, &stepBytesSqrIntegral);
     pUSMImage = ippiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesUSM);
     pFilteredImage = ippiMalloc_32f_C1(imageROISize.width, imageROISize.height, &stepBytesFiltered);   
     
@@ -121,11 +122,11 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     //Compute squared image
     status = ippiSqr_32f_C1R(pSrcwBorderImage, stepBytesSrcwBorder, pSqrBorderImage, stepBytesSrcSqr, imageROIwBorderSize);
     //Compute Squared Integral Image
-    status = ippiIntegral_32f_C1R(pSrcwBorderImage, stepBytesSrcwBorder, pSqrIntegralImage, stepBytesSqrIntegral, imageROIwBorderSize);
+    status = ippiIntegral_32f_C1R(pSqrBorderImage, stepBytesSrcwBorder, pSqrIntegralImage, stepBytesSqrIntegral, imageROIwBorderSize);
     ///////
     //DEBUG
     ///////
-    /*cout << "image : "<<endl;
+    cout << "image : "<<endl;
     for (int r = 0; r < imageROIwBorderSize.height; ++r)
     {
         for (int s = 0; s < imageROIwBorderSize.width; ++s)
@@ -133,7 +134,16 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
             cout << pSrcwBorderImage[r*(stepBytesSrcwBorder/sizeof(Ipp32f)) + s] << " ";
         }
         cout <<endl;
-    }*/
+    }
+    cout << "Sqr Integral image : "<<endl;
+    for (int r = 0; r < imageROIwBorderSize.height+1; ++r)
+    {
+        for (int s = 0; s < imageROIwBorderSize.width+1; ++s)
+        {
+            cout << pSqrIntegralImage[r*(stepBytesSqrIntegral/sizeof(Ipp32f)) + s] << " ";
+        }
+        cout <<endl;
+    }
     ////////
     ////////
 
@@ -141,8 +151,6 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pUSMImage, stepBytesUSM, pSqrIntegralImage, stepBytesSqrIntegral, pFilteredImage, stepBytesFiltered, imageROISize, wSize, wSize_n, sigma_r);
 
     //putting back everything
-    //ippiMulC_32f_C1IR(scaleFactor, pFilteredImage, stepBytesFiltered, imageROISize);
-    //ippiConvert_32f8u_C1R(pFilteredImage, stepBytesFiltered, pDstImage , outputImage.step[0], imageROISize, ippRndFinancial);
     ippiMulC_32f_C1IR(scaleFactor, pFilteredImage, stepBytesFiltered, imageROISize);
     ippiConvert_32f8u_C1R(pFilteredImage, stepBytesFiltered, pDstImage , outputImage.step[0], imageROISize, ippRndFinancial);
     

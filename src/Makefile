@@ -8,7 +8,7 @@ IPP_LIBS_PATH = $(IPPROOT)/lib/intel64
 CC = icpc
 # define any compile-time flags
 CFLAGS = -g #-qopenmp -O3 -xmic-avx512  -fma -align -finline-functions
-LIBS = -lippi -lippcc -lipps -lippvm  -lippcore `pkg-config --cflags --libs opencv`
+LIBS = -lippi -lippcv -lippcc -lipps -lippvm  -lippcore `pkg-config --cflags --libs opencv`
 
 LDFLAGS =-g3 -Wall #-qopt-report=2 -qopt-report-phase=vec
 # define any directories containing header files other than /usr/include
