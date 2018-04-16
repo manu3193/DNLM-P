@@ -91,7 +91,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
             status = ippiCrossCorrNorm_32f_C1R( pWindowStart, stepBytesSrcBorder, windowBorderSize, pNeighborhoodStartIJ, stepBytesSrcBorder, neighborhoodSize, pWindowIJCorr, stepBytesWindowIJCorr, corrAlgCfg, pBuffer);
             
             //DEBUG
-            /*cout << "Image Window"<<endl;
+            cout << "Image Window"<<endl;
             for (int ii = 0; ii < windowBorderSize.width; ++ii)
             {
                 for (int jj = 0; jj < windowBorderSize.height; ++jj)
@@ -132,35 +132,46 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
             cout << "IJ top_left: "<<pSqrIntegralImage[indexIINeighborIJBase + i+neighborhoodStartOffset]<<endl; 
             cout << "IJ top_right: "<<pSqrIntegralImage[indexIINeighborIJBase + (i + neighborhoodStartOffset+iIRightBottomOffset)]<<endl; 
             cout << "IJ bottom_left: "<<pSqrIntegralImage[indexIINeighborIJBaseWOffset + i+neighborhoodStartOffset]<<endl;
-           */
+           
             //
 
             for (int n = 0; n < windowSize.height; ++n)
             {
                 const int indexEuclDistBase = n*(stepBytesEuclDist/sizeof(Ipp32f));
                 const int indexWindowIJCorr = n*(stepBytesWindowIJCorr/sizeof(Ipp32f));
-                const int indexIINeighborMNBase = (j + n + neighborhoodStartOffset)*(stepBytesSqrIntegral/sizeof(Ipp32f));
-                const int indexIINeighborMNBaseWOffset = (j + n + neighborhoodStartOffset + iIRightBottomOffset)*(stepBytesSqrIntegral/sizeof(Ipp32f));
+                const int indexIINeighborMNBase = (j + n )*(stepBytesSqrIntegral/sizeof(Ipp32f));
+                const int indexIINeighborMNBaseWOffset = (j + n + iIRightBottomOffset)*(stepBytesSqrIntegral/sizeof(Ipp32f));
 
                 for (int m = 0; m < windowSize.width; ++m)
                 {
 
                     //Get summation of (m,n) neighborhood area
-                    const Ipp32f sqrSumMNNeighborhood = pSqrIntegralImage[indexIINeighborMNBaseWOffset + (i + m + neighborhoodStartOffset + iIRightBottomOffset)] 
-                                                        + pSqrIntegralImage[indexIINeighborMNBase + (i + m + neighborhoodStartOffset)] 
-                                                        - pSqrIntegralImage[indexIINeighborMNBase + (i + m + neighborhoodStartOffset + iIRightBottomOffset)] 
-                                                        - pSqrIntegralImage[indexIINeighborMNBaseWOffset + (i + m + neighborhoodStartOffset)];
+                    const Ipp32f sqrSumMNNeighborhood = pSqrIntegralImage[indexIINeighborMNBaseWOffset + (i + m  + iIRightBottomOffset)] 
+                                                        + pSqrIntegralImage[indexIINeighborMNBase + (i + m )] 
+                                                        - pSqrIntegralImage[indexIINeighborMNBase + (i + m  + iIRightBottomOffset)] 
+                                                        - pSqrIntegralImage[indexIINeighborMNBaseWOffset + (i + m )];
 
                     pEuclDist[indexEuclDistBase + m] = sqrSumMNNeighborhood + sqrSumIJNeighborhood -2*pWindowIJCorr[indexWindowIJCorr + m];
                 
                     //DEBUG
-                    /*cout <<"Neighborhood MN summ: "<<sqrSumMNNeighborhood<<endl;
-                    cout << "MN bottom_right: "<<pSqrIntegralImage[indexIINeighborMNBaseWOffset + (i + m+neighborhoodStartOffset+iIRightBottomOffset)] <<endl;
-                    cout << "MN top_left: "<<pSqrIntegralImage[indexIINeighborMNBase + i+m+neighborhoodStartOffset]<<endl; 
-                    cout << "MN top_right: "<<pSqrIntegralImage[indexIINeighborMNBase + (i + m+neighborhoodStartOffset+iIRightBottomOffset)]<<endl; 
-                    cout << "MN bottom_left: "<<pSqrIntegralImage[indexIINeighborMNBaseWOffset + i+m+neighborhoodStartOffset]<<endl;
-*/
+                    cout <<"Neighborhood MN summ: "<<sqrSumMNNeighborhood<<endl;
+                    cout <<"Correlation value: "<<pWindowIJCorr[indexWindowIJCorr + m]<<endl;
+                    cout << "MN bottom_right: "<<pSqrIntegralImage[indexIINeighborMNBaseWOffset + (i + m+iIRightBottomOffset)] <<endl;
+                    cout << "MN top_left: "<<pSqrIntegralImage[indexIINeighborMNBase + i+m]<<endl; 
+                    cout << "MN top_right: "<<pSqrIntegralImage[indexIINeighborMNBase + (i + m+iIRightBottomOffset)]<<endl; 
+                    cout << "MN bottom_left: "<<pSqrIntegralImage[indexIINeighborMNBaseWOffset + i+m]<<endl;
+
                 }
+            }
+
+            cout << "Eucli Dist"<<endl;
+            for (int ii = 0; ii < windowSize.width; ++ii)
+            {
+                for (int jj = 0; jj < windowSize.height; ++jj)
+                {
+                    cout << pEuclDist[(ii*stepBytesEuclDist/sizeof(Ipp32f))+jj] <<" ";
+                }
+                cout << endl;
             }
 
 
