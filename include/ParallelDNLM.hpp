@@ -7,6 +7,7 @@
 #include <ippcv.h>
 #include <DNLMFilter.hpp>
 #include <NoAdaptiveUSM.hpp>
+#include <timer.h>
 
 using namespace cv;
 using namespace std;
