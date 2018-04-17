@@ -98,9 +98,6 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
 
     imageROIwBorderSize = {imageROISize.width + 2*imageTopLeftOffset, imageROISize.height + 2*imageTopLeftOffset};     
 
-    cout << "Image H: "<< imageROISize.height << " W: " << imageROISize.width <<endl;
-    cout << "Image w/border H: "<< imageROIwBorderSize.height << " W: " << imageROIwBorderSize.width <<endl;                    
-
     //Allocate memory for images
     pSrc32fImage = ippiMalloc_32f_C1(imageROISize.width, imageROISize.height, &stepBytesSrc); 
     pSrcwBorderImage = ippiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesSrcwBorder);
