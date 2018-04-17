@@ -5,15 +5,15 @@
 
 int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* pDst, int stepBytesDst, const IppiSize roiSize, const float sigma, const float lambda, const int kernelLen){
 	
-	if (pSrc == NULL || pDst == NULL)
-	{
-		//ToDo better error handling
-		return -1;
-	}
+    if (pSrc == NULL || pDst == NULL)
+    {
+	//ToDo better error handling
+	return -1;
+    }
 
-	IppStatus status = ippStsNoErr;
-	Ipp32f *pFilteredImage = NULL, *pFilteredAbsImage = NULL;
-	Ipp8u *pBuffer = NULL;                /* Pointer to the work buffer */
+    IppStatus status = ippStsNoErr;
+    Ipp32f *pFilteredImage = NULL, *pFilteredAbsImage = NULL;
+    Ipp8u *pBuffer = NULL;                /* Pointer to the work buffer */
     IppiFilterBorderSpec* pSpec = NULL;   /* context structure */
     int iTmpBufSize = 0, iSpecSize = 0;   /* Common work buffer size */
     IppiBorderType borderType = ippBorderRepl;
@@ -28,7 +28,7 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* p
     Ipp32f minSrc, maxSrc, minFilt, maxFilt;
 
     //Declare array for laplacian kernel
-    Ipp32f pKernel[kernelLen * kernelLen];
+    Ipp32f pKernel[kernelLen * kernelLen] __attribute__((aligned(64)));
     //Allocate memory for filtered image
     pFilteredImage = ippiMalloc_32f_C1(roiSize.width, roiSize.height, &stepBytesFiltered); 
 	//Allocate memory for filtered abs image
@@ -116,19 +116,24 @@ int NoAdaptiveUSM::generateLoGKernel(const int size,const float sigma, Ipp32f* p
     roiSize.width = size;
     roiSize.height = size;
 
-	//Allocate memory for matrix to store (x*x + y*y) term. 
-	Ipp32f* pRadXY =  ippiMalloc_32f_C1(size, size, &stepBytesRadXY);
-	//Allocate memory for matrix to store exponential term. 
-	Ipp32f* pExpTerm =  ippiMalloc_32f_C1(size, size, &stepBytesExpTerm);
-	//Copy Dst buffer dir to pointer for laplacian term. 
-	Ipp32f* pLaplTerm =  ippiMalloc_32f_C1(size, size, &stepBytesLaplTerm);
+    Ipp32f* pRadXY __attribute__((aligned(64)));
+    Ipp32f* pExpTerm __attribute__((aligned(64)));
+    Ipp32f* pLaplTerm __attribute__((aligned(64)));
 
+	//Allocate memory for matrix to store (x*x + y*y) term. 
+    pRadXY =  ippiMalloc_32f_C1(size, size, &stepBytesRadXY);
+	//Allocate memory for matrix to store exponential term. 
+    pExpTerm =  ippiMalloc_32f_C1(size, size, &stepBytesExpTerm);
+	//Copy Dst buffer dir to pointer for laplacian term. 
+    pLaplTerm =  ippiMalloc_32f_C1(size, size, &stepBytesLaplTerm);
+
+	#pragma omp parallel for
 	for (int j = 0; j < size; ++j)
 	{
         const int indexRadXY = j*(stepBytesRadXY/sizeof(Ipp32f));
         const int indexExpTerm = j*(stepBytesExpTerm/sizeof(Ipp32f));
         const Ipp32f x_quad = (j - halfSize) * (j - halfSize);
-
+                #pragma vector aligned
 		for (int i = 0; i < size; ++i)
 		{
 			//Compute radial distance term (x*x + y*y) and exponential term
@@ -158,10 +163,13 @@ int NoAdaptiveUSM::generateLoGKernel(const int size,const float sigma, Ipp32f* p
 	status = ippiSum_32f_C1R(pLaplTerm, stepBytesLaplTerm, roiSize, &sumLaplTerm, ippAlgHintNone);	
 	status = ippiAddC_32f_C1IR((Ipp32f) -sumLaplTerm/(size*size), pLaplTerm, stepBytesLaplTerm, roiSize);
 
+    #pragma omp parallel for
     for (int j = 0; j < size; ++j)
     {
         const int indexBaseLaplTerm = j*(stepBytesLaplTerm/sizeof(Ipp32f));
         const int indexBaseKernel = j*(size);
+        
+        #pragma vector aligned
         for (int i = 0; i < size; ++i)
         {
             pKernel[indexBaseKernel+i] = -pLaplTerm[indexBaseLaplTerm + i];
