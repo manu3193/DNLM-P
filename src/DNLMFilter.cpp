@@ -56,9 +56,9 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
         for (int i = 0; i < imageSize.width; ++i)
         {
             
-            const Ipp32f *pWindowStart = (Ipp32f *) &pSrcBorder[indexWindowStartBase+i]; 
-            const Ipp32f *pNeighborhoodStartIJ = (Ipp32f *) &pSrcBorder[indexNeighborIJBase + (i + neighborhoodStartOffset)];
-            const Ipp32f *pUSMWindowStart = (Ipp32f *) &pUSMImage[indexUSMWindowBase+(i + windowTopLeftOffset)];
+            const Ipp32f *pWindowStart = &pSrcBorder[indexWindowStartBase+i]; 
+            const Ipp32f *pNeighborhoodStartIJ = &pSrcBorder[indexNeighborIJBase + (i + neighborhoodStartOffset)];
+            const Ipp32f *pUSMWindowStart = &pUSMImage[indexUSMWindowBase+(i + windowTopLeftOffset)];
 
             for (int n = 0; n < windowSize.height; ++n)
             {
@@ -67,7 +67,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
 
                 for (int m = 0; m < windowSize.width; ++m)
                 {
-                    const pNeighborhoodStartNM = &pWindowStart[indexNeighborNMBase + m];
+                    const Ipp32f *pNeighborhoodStartNM = &pWindowStart[indexNeighborNMBase + m];
                     ippiNormDiff_L2_32f_C1R(pNeighborhoodStartNM, stepBytesSrcBorder, pNeighborhoodStartIJ, stepBytesSrcBorder, neighborhoodSize, &euclDistResult, ippAlgHintNone);
                     pEuclDist[indexEuclDistBase + m] = (Ipp32f) euclDistResult;
                 }
@@ -82,7 +82,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
             pDst[indexPdstBase+i] = (Ipp32f) (filterResult/ sumExpTerm);
 
             //Need to do better error handling 
-            if(status!=ippStsNoErr) cout << "Error " << status << endl;
+            //if(status!=ippStsNoErr) cout << "Error " << status << endl;
 
         }
     }
