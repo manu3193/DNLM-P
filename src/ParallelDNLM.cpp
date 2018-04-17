@@ -49,10 +49,10 @@ int main(int argc, char* argv[]){
 
 Mat ParallelDNLM::processImage(const Mat& inputImage){
     //Set parameters for processing
-    int wRSize = 7;
-    int wSize_n=3;
+    int wRSize = 21;
+    int wSize_n=7;
     float kernelStd = 0.001f;
-    int kernelLen = 7;
+    int kernelLen = 21;
     float sigma_r = 0.5f; //13
     float lambda = 3.0f;
     
@@ -126,7 +126,7 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     ///////
     //DEBUG
     ///////
-    cout << "image : "<<endl;
+    /*cout << "image : "<<endl;
     for (int r = 0; r < imageROIwBorderSize.height; ++r)
     {
         for (int s = 0; s < imageROIwBorderSize.width; ++s)
@@ -143,7 +143,7 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
             cout << pSqrIntegralImage[r*(stepBytesSqrIntegral/sizeof(Ipp32f)) + s] << " ";
         }
         cout <<endl;
-    }
+    }*/
     ////////
     ////////
 

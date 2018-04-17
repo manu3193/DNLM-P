@@ -91,7 +91,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
             status = ippiCrossCorrNorm_32f_C1R( pWindowStart, stepBytesSrcBorder, windowBorderSize, pNeighborhoodStartIJ, stepBytesSrcBorder, neighborhoodSize, pWindowIJCorr, stepBytesWindowIJCorr, corrAlgCfg, pBuffer);
             
             //DEBUG
-            cout << "Image Window"<<endl;
+            /*cout << "Image Window"<<endl;
             for (int ii = 0; ii < windowBorderSize.width; ++ii)
             {
                 for (int jj = 0; jj < windowBorderSize.height; ++jj)
@@ -132,7 +132,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
             cout << "IJ top_left: "<<pSqrIntegralImage[indexIINeighborIJBase + i+neighborhoodStartOffset]<<endl; 
             cout << "IJ top_right: "<<pSqrIntegralImage[indexIINeighborIJBase + (i + neighborhoodStartOffset+iIRightBottomOffset)]<<endl; 
             cout << "IJ bottom_left: "<<pSqrIntegralImage[indexIINeighborIJBaseWOffset + i+neighborhoodStartOffset]<<endl;
-           
+           */
             //
 
             for (int n = 0; n < windowSize.height; ++n)
@@ -154,17 +154,17 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                     pEuclDist[indexEuclDistBase + m] = sqrSumMNNeighborhood + sqrSumIJNeighborhood -2*pWindowIJCorr[indexWindowIJCorr + m];
                 
                     //DEBUG
-                    cout <<"Neighborhood MN summ: "<<sqrSumMNNeighborhood<<endl;
+                    /*cout <<"Neighborhood MN summ: "<<sqrSumMNNeighborhood<<endl;
                     cout <<"Correlation value: "<<pWindowIJCorr[indexWindowIJCorr + m]<<endl;
                     cout << "MN bottom_right: "<<pSqrIntegralImage[indexIINeighborMNBaseWOffset + (i + m+iIRightBottomOffset)] <<endl;
                     cout << "MN top_left: "<<pSqrIntegralImage[indexIINeighborMNBase + i+m]<<endl; 
                     cout << "MN top_right: "<<pSqrIntegralImage[indexIINeighborMNBase + (i + m+iIRightBottomOffset)]<<endl; 
                     cout << "MN bottom_left: "<<pSqrIntegralImage[indexIINeighborMNBaseWOffset + i+m]<<endl;
-
+*/
                 }
             }
 
-            cout << "Eucli Dist"<<endl;
+            /*cout << "Eucli Dist"<<endl;
             for (int ii = 0; ii < windowSize.width; ++ii)
             {
                 for (int jj = 0; jj < windowSize.height; ++jj)
@@ -172,7 +172,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                     cout << pEuclDist[(ii*stepBytesEuclDist/sizeof(Ipp32f))+jj] <<" ";
                 }
                 cout << endl;
-            }
+            }*/
 
 
             status = ippiDivC_32f_C1IR((Ipp32f) -(sigma_r * sigma_r), pEuclDist, stepBytesEuclDist, windowSize);
