@@ -111,28 +111,15 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
 
     // Mirror border for full image filtering
     status = ippiCopyMirrorBorder_32f_C1R(pSrc32fImage, stepBytesSrc, imageROISize, pSrcwBorderImage, stepBytesSrcwBorder, imageROIwBorderSize, imageTopLeftOffset, imageTopLeftOffset);
-
-    ///////
-    //DEBUG
-    ///////
-    /*cout << "image : "<<endl;
-    for (int r = 0; r < imageROIwBorderSize.height; ++r)
-    {
-        for (int s = 0; s < imageROIwBorderSize.width; ++s)
-        {
-            cout << pSrcwBorderImage[r*(stepBytesSrcwBorder/sizeof(Ipp32f)) + s] << " ";
-        }
-        cout <<endl;
-    }*/
-    ////////
-    ////////
-
+    //timer start
+    timerStart();
+    
     this->noAdaptiveUSM.noAdaptiveUSM(pSrcwBorderImage, stepBytesSrcwBorder, pUSMImage, stepBytesUSM, imageROIwBorderSize, kernelStd, lambda, kernelLen);
     this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pUSMImage, stepBytesUSM, pFilteredImage, stepBytesFiltered, imageROISize, wSize, wSize_n, sigma_r);
 
+    double time = timerStop();
+
     //putting back everything
-    //ippiMulC_32f_C1IR(scaleFactor, pFilteredImage, stepBytesFiltered, imageROISize);
-    //ippiConvert_32f8u_C1R(pFilteredImage, stepBytesFiltered, pDstImage , outputImage.step[0], imageROISize, ippRndFinancial);
     ippiMulC_32f_C1IR(scaleFactor, pFilteredImage, stepBytesFiltered, imageROISize);
     ippiConvert_32f8u_C1R(pFilteredImage, stepBytesFiltered, pDstImage , outputImage.step[0], imageROISize, ippRndFinancial);
     
@@ -141,6 +128,8 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     ippiFree(pSrcwBorderImage);
     ippiFree(pUSMImage);
     ippiFree(pFilteredImage);
+
+    cout << time << endl;
 
     return outputImage;
 }
