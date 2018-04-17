@@ -101,9 +101,6 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     imageROIwBorderSize = {imageROISize.width + 2*imageTopLeftOffset, imageROISize.height + 2*imageTopLeftOffset};     
     imageROIwBorderIISize = {imageROIwBorderSize.width + 1, imageROIwBorderSize.height + 1}; 
     
-    //cout << "Image H: "<< imageROISize.height << " W: " << imageROISize.width <<endl;
-    //cout << "Image w/border H: "<< imageROIwBorderSize.height << " W: " << imageROIwBorderSize.width <<endl;                    
-
     //Allocate memory for images
     pSrc32fImage = ippiMalloc_32f_C1(imageROISize.width, imageROISize.height, &stepBytesSrc); 
     pSrcwBorderImage = ippiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesSrcwBorder);
@@ -123,29 +120,6 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     status = ippiSqr_32f_C1R(pSrcwBorderImage, stepBytesSrcwBorder, pSqrBorderImage, stepBytesSrcSqr, imageROIwBorderSize);
     //Compute Squared Integral Image
     status = ippiIntegral_32f_C1R(pSqrBorderImage, stepBytesSrcwBorder, pSqrIntegralImage, stepBytesSqrIntegral, imageROIwBorderSize);
-    ///////
-    //DEBUG
-    ///////
-    /*cout << "image : "<<endl;
-    for (int r = 0; r < imageROIwBorderSize.height; ++r)
-    {
-        for (int s = 0; s < imageROIwBorderSize.width; ++s)
-        {
-            cout << pSrcwBorderImage[r*(stepBytesSrcwBorder/sizeof(Ipp32f)) + s] << " ";
-        }
-        cout <<endl;
-    }
-    cout << "Sqr Integral image : "<<endl;
-    for (int r = 0; r < imageROIwBorderSize.height+1; ++r)
-    {
-        for (int s = 0; s < imageROIwBorderSize.width+1; ++s)
-        {
-            cout << pSqrIntegralImage[r*(stepBytesSqrIntegral/sizeof(Ipp32f)) + s] << " ";
-        }
-        cout <<endl;
-    }*/
-    ////////
-    ////////
 
     this->noAdaptiveUSM.noAdaptiveUSM(pSrcwBorderImage, stepBytesSrcwBorder, pUSMImage, stepBytesUSM, imageROIwBorderSize, kernelStd, lambda, kernelLen);
     this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pUSMImage, stepBytesUSM, pSqrIntegralImage, stepBytesSqrIntegral, pFilteredImage, stepBytesFiltered, imageROISize, wSize, wSize_n, sigma_r);

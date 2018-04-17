@@ -25,9 +25,8 @@ int DNLMFilter::dnlmFilter(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, int
 
 //Implements dnlm filter for grayscale images.
 int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, const Ipp32f* pUSMImage, int stepBytesUSM, const Ipp32f* pSqrIntegralImage, int stepBytesSqrIntegral, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
-    //Variable to store status
-    int status;
-    Ipp32f *pWindowIJCorr = NULL, *pEuclDist;
+    //Variable definition
+    Ipp32f *pWindowIJCorr = NULL, *pEuclDist= NULL;
     int stepBytesWindowIJCorr = 0, stepBytesEuclDist = 0;
     //Configuration for the correlation primitive
     IppEnum corrAlgCfg = (IppEnum) (ippAlgAuto | ippiNormNone | ippiROIValid);
@@ -44,25 +43,18 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
     const int iIRightBottomOffset = w_n;
 
     //Compute the sliding window size
-    IppiSize windowSize = {w, w};
-    IppiSize windowBorderSize = {w + 2*windowTopLeftOffset, w + 2*windowTopLeftOffset};
-    IppiSize neighborhoodSize = {w_n, w_n};
+    const IppiSize windowSize = {w, w};
+    const IppiSize windowBorderSize = {w + 2*windowTopLeftOffset, w + 2*windowTopLeftOffset};
+    const IppiSize neighborhoodSize = {w_n, w_n};
 
     //Get correlation method buffer size
-    status = ippiCrossCorrNormGetBufferSize(windowBorderSize, neighborhoodSize, corrAlgCfg, &bufSize);
+    ippiCrossCorrNormGetBufferSize(windowBorderSize, neighborhoodSize, corrAlgCfg, &bufSize);
 
 
     //Allocate memory for correlation result and buffer
     pWindowIJCorr = ippiMalloc_32f_C1(windowSize.width, windowSize.height, &stepBytesWindowIJCorr);
     pEuclDist = ippiMalloc_32f_C1(windowSize.width, windowSize.height, &stepBytesEuclDist);
     pBuffer = ippsMalloc_8u( bufSize );
-
-
-    //DEBUG
-     /*cout << "Window H: "<< windowSize.height << " W: " << windowSize.width <<endl;
-     cout << "Window w/border H: "<< windowBorderSize.height << " W: " << windowBorderSize.width <<endl;
-     cout << "Neighborhood H: "<< neighborhoodSize.height << " W: " << neighborhoodSize.width <<endl;
-    *///
 
 
     for (int j = 0; j < imageSize.height; ++j)
@@ -88,52 +80,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
             const Ipp32f *pUSMWindowStart = (Ipp32f *) &pUSMImage[indexUSMWindowBase+(i + windowTopLeftOffset)];
 
             
-            status = ippiCrossCorrNorm_32f_C1R( pWindowStart, stepBytesSrcBorder, windowBorderSize, pNeighborhoodStartIJ, stepBytesSrcBorder, neighborhoodSize, pWindowIJCorr, stepBytesWindowIJCorr, corrAlgCfg, pBuffer);
-            
-            //DEBUG
-            /*cout << "Image Window"<<endl;
-            for (int ii = 0; ii < windowBorderSize.width; ++ii)
-            {
-                for (int jj = 0; jj < windowBorderSize.height; ++jj)
-                {
-                    cout << pWindowStart[(ii*stepBytesSrcBorder/sizeof(Ipp32f))+jj] <<" ";
-                }
-                cout << endl;
-            }
-            cout << "Sqr Integral Window"<<endl;
-            for (int ii = 0; ii < windowBorderSize.width+1; ++ii)
-            {
-                for (int jj = 0; jj < windowBorderSize.height+1; ++jj)
-                {
-                    cout << pSqrIntegralImage[(ii*stepBytesSqrIntegral/sizeof(Ipp32f))+jj] <<" ";
-                }
-                cout << endl;
-            }
-            cout << "Neighborhood IJ"<<endl;
-            for (int ii = 0; ii < neighborhoodSize.width; ++ii)
-            {
-                for (int jj = 0; jj < neighborhoodSize.height; ++jj)
-                {
-                    cout << pNeighborhoodStartIJ[(ii*stepBytesSrcBorder/sizeof(Ipp32f))+jj] <<" ";
-                }
-                cout << endl;
-            }
-            cout << "Correlation IJ"<<endl;
-            for (int ii = 0; ii < windowSize.width; ++ii)
-            {
-                for (int jj = 0; jj < windowSize.height; ++jj)
-                {
-                    cout << pWindowIJCorr[(ii*stepBytesWindowIJCorr/sizeof(Ipp32f))+jj] <<" ";
-                }
-                cout << endl;
-            }
-            cout <<"Neighborhood IJ summ: "<<sqrSumIJNeighborhood<<endl;
-            cout << "IJ bottom_right: "<<pSqrIntegralImage[indexIINeighborIJBaseWOffset + (i + +neighborhoodStartOffset+iIRightBottomOffset)] <<endl;
-            cout << "IJ top_left: "<<pSqrIntegralImage[indexIINeighborIJBase + i+neighborhoodStartOffset]<<endl; 
-            cout << "IJ top_right: "<<pSqrIntegralImage[indexIINeighborIJBase + (i + neighborhoodStartOffset+iIRightBottomOffset)]<<endl; 
-            cout << "IJ bottom_left: "<<pSqrIntegralImage[indexIINeighborIJBaseWOffset + i+neighborhoodStartOffset]<<endl;
-           */
-            //
+            ippiCrossCorrNorm_32f_C1R( pWindowStart, stepBytesSrcBorder, windowBorderSize, pNeighborhoodStartIJ, stepBytesSrcBorder, neighborhoodSize, pWindowIJCorr, stepBytesWindowIJCorr, corrAlgCfg, pBuffer);
 
             for (int n = 0; n < windowSize.height; ++n)
             {
@@ -153,38 +100,20 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
 
                     pEuclDist[indexEuclDistBase + m] = sqrSumMNNeighborhood + sqrSumIJNeighborhood -2*pWindowIJCorr[indexWindowIJCorr + m];
                 
-                    //DEBUG
-                    /*cout <<"Neighborhood MN summ: "<<sqrSumMNNeighborhood<<endl;
-                    cout <<"Correlation value: "<<pWindowIJCorr[indexWindowIJCorr + m]<<endl;
-                    cout << "MN bottom_right: "<<pSqrIntegralImage[indexIINeighborMNBaseWOffset + (i + m+iIRightBottomOffset)] <<endl;
-                    cout << "MN top_left: "<<pSqrIntegralImage[indexIINeighborMNBase + i+m]<<endl; 
-                    cout << "MN top_right: "<<pSqrIntegralImage[indexIINeighborMNBase + (i + m+iIRightBottomOffset)]<<endl; 
-                    cout << "MN bottom_left: "<<pSqrIntegralImage[indexIINeighborMNBaseWOffset + i+m]<<endl;
-*/
+                    
                 }
             }
 
-            /*cout << "Eucli Dist"<<endl;
-            for (int ii = 0; ii < windowSize.width; ++ii)
-            {
-                for (int jj = 0; jj < windowSize.height; ++jj)
-                {
-                    cout << pEuclDist[(ii*stepBytesEuclDist/sizeof(Ipp32f))+jj] <<" ";
-                }
-                cout << endl;
-            }*/
-
-
-            status = ippiDivC_32f_C1IR((Ipp32f) -(sigma_r * sigma_r), pEuclDist, stepBytesEuclDist, windowSize);
-            status = ippiExp_32f_C1IR(pEuclDist, stepBytesEuclDist, windowSize);
-            status = ippiSum_32f_C1R(pEuclDist, stepBytesEuclDist, windowSize, &sumExpTerm, ippAlgHintNone);
-            status = ippiMul_32f_C1IR(pUSMWindowStart, stepBytesUSM, pEuclDist, stepBytesEuclDist, windowSize);
-            status = ippiSum_32f_C1R(pEuclDist, stepBytesEuclDist, windowSize, &filterResult, ippAlgHintNone);
+            ippiDivC_32f_C1IR((Ipp32f) -(sigma_r * sigma_r), pEuclDist, stepBytesEuclDist, windowSize);
+            ippiExp_32f_C1IR(pEuclDist, stepBytesEuclDist, windowSize);
+            ippiSum_32f_C1R(pEuclDist, stepBytesEuclDist, windowSize, &sumExpTerm, ippAlgHintNone);
+            ippiMul_32f_C1IR(pUSMWindowStart, stepBytesUSM, pEuclDist, stepBytesEuclDist, windowSize);
+            ippiSum_32f_C1R(pEuclDist, stepBytesEuclDist, windowSize, &filterResult, ippAlgHintNone);
 
             pDst[indexPdstBase+i] = (Ipp32f) (filterResult/ sumExpTerm);
             //cout << pDst[j*(stepBytesDst/sizeof(Ipp32f))+i] << " ";
 
-            if(status!=ippStsNoErr) cout << "Error " << status << endl;
+            //if(status!=ippStsNoErr) cout << "Error " << status << endl;
 
         }
     }
