@@ -68,13 +68,11 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     IppStatus status = ippStsNoErr;
 
     //Pointers to IPP type images 
-    Ipp32f *pSrc32fImage = NULL, *pSrcwBorderImage = NULL, *pSqrBorderImage = NULL, *pSqrIntegralImage = NULL, *pUSMImage = NULL, *pFilteredImage= NULL;
+    Ipp32f *pSrc32fImage = NULL, *pSrcwBorderImage = NULL, *pUSMImage = NULL, *pFilteredImage= NULL;
 
     //Variable to store image step size in bytes 
     int stepBytesSrc = 0;
     int stepBytesSrcwBorder = 0;
-    int stepBytesSrcSqr = 0;
-    int stepBytesSqrIntegral = 0;
     int stepBytesUSM = 0;
     int stepBytesFiltered = 0;
 
@@ -86,7 +84,7 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     Mat outputImage = Mat(srcImage.size(), srcImage.type());
 
     //Variables used for image format conversion
-    IppiSize imageROISize, imageROIwBorderSize, imageROIwBorderIISize;
+    IppiSize imageROISize, imageROIwBorderSize;
     imageROISize.width = srcImage.size().width;
     imageROISize.height = srcImage.size().height;
 
@@ -95,17 +93,14 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     Ipp8u *pDstImage = (Ipp8u*)&outputImage.data[0];   
 
     //Compute border offset for border replicated image
-    const int windowTopLeftOffset = floor(wSize_n/2);
-    const int imageTopLeftOffset = floor(wSize/2) + windowTopLeftOffset;
+    // int windowTopLeftOffset = floor(wSize_n/2);
+    const int imageTopLeftOffset = floor(wSize/2);// + windowTopLeftOffset;
 
     imageROIwBorderSize = {imageROISize.width + 2*imageTopLeftOffset, imageROISize.height + 2*imageTopLeftOffset};     
-    imageROIwBorderIISize = {imageROIwBorderSize.width + 1, imageROIwBorderSize.height + 1}; 
     
     //Allocate memory for images
     pSrc32fImage = ippiMalloc_32f_C1(imageROISize.width, imageROISize.height, &stepBytesSrc); 
     pSrcwBorderImage = ippiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesSrcwBorder);
-    pSqrBorderImage = ippiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesSrcSqr);
-    pSqrIntegralImage = ippiMalloc_32f_C1(imageROIwBorderIISize.width, imageROIwBorderIISize.height, &stepBytesSqrIntegral);
     pUSMImage = ippiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesUSM);
     pFilteredImage = ippiMalloc_32f_C1(imageROISize.width, imageROISize.height, &stepBytesFiltered);   
     
@@ -116,15 +111,11 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
 
     // Mirror border for full image filtering
     status = ippiCopyMirrorBorder_32f_C1R(pSrc32fImage, stepBytesSrc, imageROISize, pSrcwBorderImage, stepBytesSrcwBorder, imageROIwBorderSize, imageTopLeftOffset, imageTopLeftOffset);
-    //Compute squared image
-    status = ippiSqr_32f_C1R(pSrcwBorderImage, stepBytesSrcwBorder, pSqrBorderImage, stepBytesSrcSqr, imageROIwBorderSize);
-    //Compute Squared Integral Image
-    status = ippiIntegral_32f_C1R(pSqrBorderImage, stepBytesSrcwBorder, pSqrIntegralImage, stepBytesSqrIntegral, imageROIwBorderSize);
     //timer start
     timerStart();
     
     this->noAdaptiveUSM.noAdaptiveUSM(pSrcwBorderImage, stepBytesSrcwBorder, pUSMImage, stepBytesUSM, imageROIwBorderSize, kernelStd, lambda, kernelLen);
-    this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pUSMImage, stepBytesUSM, pSqrIntegralImage, stepBytesSqrIntegral, pFilteredImage, stepBytesFiltered, imageROISize, wSize, wSize_n, sigma_r);
+    this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pUSMImage, stepBytesUSM, pFilteredImage, stepBytesFiltered, imageROISize, wSize, wSize_n, sigma_r);
 
     double time = timerStop();
 

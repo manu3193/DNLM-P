@@ -2,7 +2,7 @@
 #include "DNLMFilter.hpp"
 
 // Pre-process input and select appropriate filter.
-int DNLMFilter::dnlmFilter(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, int srcType, const Ipp32f* pUSMImage, int stepByteUSM,  const Ipp32f* pSqrIntegralImage, int stepBytesSqrIntegral, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
+int DNLMFilter::dnlmFilter(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, int srcType, const Ipp32f* pUSMImage, int stepByteUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
 
     int status;
 
@@ -15,7 +15,7 @@ int DNLMFilter::dnlmFilter(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, int
 
     else if (srcType == CV_32FC1 ){
         //apply DNLM for grayscale images   
-        status = this->dnlmFilterBW(pSrcBorder, stepBytesSrcBorder, pUSMImage, stepByteUSM, pSqrIntegralImage, stepBytesSqrIntegral, pDst, stepBytesDst, imageSize, w, w_n, sigma_r);
+        status = this->dnlmFilterBW(pSrcBorder, stepBytesSrcBorder, pUSMImage, stepByteUSM, pDst, stepBytesDst, imageSize, w, w_n, sigma_r);
     }
     
     else
@@ -24,12 +24,12 @@ int DNLMFilter::dnlmFilter(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, int
 }
 
 //Implements dnlm filter for grayscale images.
-int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, const Ipp32f* pUSMImage, int stepBytesUSM, const Ipp32f* pSqrIntegralImage, int stepBytesSqrIntegral, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
+int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, const Ipp32f* pUSMImage, int stepBytesUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
     //Variable definition
-    Ipp32f *pWindowIJCorr = NULL, *pEuclDist= NULL;
-    int stepBytesWindowIJCorr = 0, stepBytesEuclDist = 0;
+    Ipp32f *pEuclDist= NULL;
+    int stepBytesEuclDist = 0;
     //Configuration for the correlation primitive
-    IppEnum corrAlgCfg = (IppEnum) (ippAlgAuto | ippiNormNone | ippiROIValid);
+    IppEnum filterAlgCfg = (IppEnum) (ippAlgAuto | ippiNormNone | ippiROIValid);
     Ipp8u *pBuffer;
     int bufSize=0;
 
@@ -52,12 +52,11 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
 
 
     //Allocate memory for correlation result and buffer
-    pWindowIJCorr = ippiMalloc_32f_C1(windowSize.width, windowSize.height, &stepBytesWindowIJCorr);
     pEuclDist = ippiMalloc_32f_C1(windowSize.width, windowSize.height, &stepBytesEuclDist);
     pBuffer = ippsMalloc_8u( bufSize );
 
 
-    for (int j = 0; j < imageSize.height; ++j)
+    for (int n = 0; n < windowSize.height; ++n)
     {
         const int indexPdstBase = j*(stepBytesDst/sizeof(Ipp32f));
         const int indexWindowStartBase = j*(stepBytesSrcBorder/sizeof(Ipp32f));
@@ -67,7 +66,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
         const int indexIINeighborIJBaseWOffset = (j + neighborhoodStartOffset + iIRightBottomOffset)*(stepBytesSqrIntegral/sizeof(Ipp32f));
 
         
-        for (int i = 0; i < imageSize.width; ++i)
+        for (int m = 0; i < windowSize.width; ++i)
         {
             //Get summation of (i,j) neighborhood area
             const Ipp32f sqrSumIJNeighborhood = pSqrIntegralImage[indexIINeighborIJBaseWOffset + (i + neighborhoodStartOffset+ iIRightBottomOffset)] 
