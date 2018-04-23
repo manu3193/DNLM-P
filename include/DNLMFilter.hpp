@@ -3,6 +3,7 @@
 #define DNLMFILTER_HPP_
 
 #include <cstdio>
+#include <algorithm>
 #include <opencv2/opencv.hpp>
 #include <ipp.h>
 
