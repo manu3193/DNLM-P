@@ -49,10 +49,10 @@ int main(int argc, char* argv[]){
 
 Mat ParallelDNLM::processImage(const Mat& inputImage){
     //Set parameters for processing
-    int wRSize = 21;
-    int wSize_n=7;
+    int wRSize = 7;
+    int wSize_n=3;
     float kernelStd = 0.001f;
-    int kernelLen = 21;
+    int kernelLen = 7;
     float sigma_r = 0.5f; //13
     float lambda = 3.0f;
     
