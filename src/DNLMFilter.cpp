@@ -28,12 +28,12 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
     //Ipp status variable
     int status;
     //Variable definition
-    Ipp32f *pEuclDist= NULL, *pSqrDiff= NULL, *pTmp = NULL, *pWeightsAcumm = NULL, *pTmpAcumm = NULL;
-    int stepSqrDiff = 0, stepBytesEuclDist = 0, stepBytesTmp= 0, stepBytesTmpAcumm = 0, stepBytesWeightsAcumm = 0;
+    Ipp32f *pEuclDist= NULL, *pSumSqrDiff= NULL, *pTmp = NULL, *pWeightsAcumm = NULL, *pTmpAcumm = NULL;
+    int stepSumSqrDiff = 0, stepBytesEuclDist = 0, stepBytesTmp= 0, stepBytesTmpAcumm = 0, stepBytesWeightsAcumm = 0;
     //Pointer to work buffer and buffer size for the BoxFilter
     Ipp8u *pBuffer = NULL;                
     int iTmpBufSize = 0;                  
-    IppiBorderType borderType = ippBorderRepl;
+    IppiBorderType borderType = ippBorderMirror;
     const Ipp8u borderValue = 0;
     int bufSize=0;
 
@@ -54,11 +54,9 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
     const IppiSize convROISize = {imageSize.width-2*nHalfLen-1, imageSize.height-2*nHalfLen-1};
 
     //Allocate memory for correlation result and buffer
-    pSqrDiff = ippiMalloc_32f_C1(imageSize.width, imageSize.height, &stepSqrDiff);
-    pEuclDist = ippiMalloc_32f_C1(imageSize.width, imageSize.height, &stepBytesEuclDist);
     pWeightsAcumm = ippiMalloc_32f_C1(imageSize.width, imageSize.height, &stepBytesWeightsAcumm);
     pTmpAcumm = ippiMalloc_32f_C1(imageSize.width, imageSize.height, &stepBytesTmpAcumm);
-    pTmp = ippiMalloc_32f_C1(convROISize.width, convROISize.height, &stepBytesTmp);
+    
     
 
     //Get buffer size for moving average filter
@@ -90,38 +88,54 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
             if (dn>0 || (dn==0 && dm>0))
             {
 
+
                 const int m_min = max(min(nHalfLen-dm,imageSize.width-nHalfLen),nHalfLen+1);
                 const int m_max = min(max(imageSize.width-nHalfLen-1-dm, nHalfLen),imageSize.width-nHalfLen-1);
 
                 const IppiSize euclROISize = {m_max-m_min+1,n_max-n_min+1};
 
-                status = ippiSub_32f_C1R(&pSrcBorder[indexSrcImageBaseWOffset + (m_min + dm)], stepBytesSrcBorder, 
-                    &pSrcBorder[indexSrcImageBase + m_min], stepBytesSrcBorder, pSqrDiff, stepSqrDiff, euclROISize);
-                status = ippiSqr_32f_C1IR(pSqrDiff, stepSqrDiff, euclROISize);
-                status = ippiFilterBoxBorder_32f_C1R(pSqrDiff, stepSqrDiff, pEuclDist, stepBytesEuclDist, euclROISize, nROISize, borderType, borderValue, pBuffer);
+                pSumSqrDiff = ippiMalloc_32f_C1(euclROISize.width, euclROISize.height, &stepSumSqrDiff);
+                pTmp = ippiMalloc_32f_C1(euclROISize.width, euclROISize.height, &stepBytesTmp);
+                pEuclDist = ippiMalloc_32f_C1(euclROISize.width, euclROISize.height, &stepBytesEuclDist);
 
+                status = ippiSub_32f_C1R((Ipp32f*) (pSrcBorder +indexSrcImageBaseWOffset + (m_min + dm)), stepBytesSrcBorder, 
+                    (Ipp32f*) (pSrcBorder + indexSrcImageBase + m_min), stepBytesSrcBorder, pSumSqrDiff, stepSumSqrDiff, euclROISize);
+                status = ippiSqr_32f_C1IR(pSumSqrDiff, stepSumSqrDiff, euclROISize);
+                
+                status = ippiFilterBoxBorder_32f_C1R(pSumSqrDiff, stepSumSqrDiff, pEuclDist, stepBytesEuclDist, euclROISize, nROISize, borderType, borderValue, pBuffer);        
+                
                 status = ippiSqrt_32f_C1IR(pEuclDist, stepBytesEuclDist, euclROISize);
-                cout << "exp res : "<<endl;
+                status = ippiSqr_32f_C1IR(pEuclDist, stepBytesEuclDist, euclROISize);
+                status = ippiDivC_32f_C1IR((Ipp32f) -(sigma_r * sigma_r), pEuclDist, stepBytesEuclDist, euclROISize);
+
+                status = ippiExp_32f_C1IR(pEuclDist, stepBytesEuclDist, euclROISize);
+                
+                //Performing filtering
+                status = ippiMul_32f_C1R(pEuclDist, stepBytesEuclDist, (Ipp32f*) (pUSMImage +indexUSMImageBaseWOffset + (m_min + dm)), stepBytesUSM, pTmp, stepBytesTmp, euclROISize);
+                //Accumulate signal and weights
+                status = ippiAdd_32f_C1IR(pTmp, stepBytesTmp, (Ipp32f*) (pDst + indexDstBase + m_min), stepBytesDst, euclROISize);
+                
+                status = ippiAdd_32f_C1IR(pTmp, stepBytesTmp, (Ipp32f*) (pWeightsAcumm + indexWeightsAcummBase + m_min), stepBytesWeightsAcumm, euclROISize);
+                /*cout << "dst : "<<endl;
                   for (int r = 0; r < euclROISize.height; ++r)
                   {
                       for (int s = 0; s < euclROISize.width; ++s)
                       {
-                          cout << pEuclDist[r*(stepBytesEuclDist/sizeof(Ipp32f)) + s] << " ";
+                        const Ipp32f* pt1 = pDst + indexDstBase + m_min;
+                          cout << pt1[r*stepBytesDst/sizeof(Ipp32f)+s] << " ";
                       }
                       cout <<endl;
                   }
-                status = ippiSqr_32f_C1IR(pEuclDist, stepBytesEuclDist, euclROISize);
-                status = ippiDivC_32f_C1IR((Ipp32f) -(sigma_r * sigma_r), pEuclDist, stepBytesEuclDist, euclROISize);
-                status = ippiExp_32f_C1IR(pEuclDist, stepBytesEuclDist, euclROISize);
-
-
-
-                //Performing filtering
-                status = ippiMul_32f_C1R(pEuclDist, stepBytesEuclDist, &pUSMImage[indexUSMImageBaseWOffset + (m_min + dm)], stepBytesUSM, pTmp, stepBytesTmp, euclROISize);
-                //Accumulate signal and weights
-                status = ippiAdd_32f_C1IR(pTmp, stepBytesTmp, &pDst[indexDstBase + m_min], stepBytesDst, euclROISize);
-                status = ippiAdd_32f_C1IR(pTmp, stepBytesTmp, &pWeightsAcumm[indexWeightsAcummBase + m_min], stepBytesWeightsAcumm, euclROISize);
-                
+                  cout << "w acumm : "<<endl;
+                  for (int r = 0; r < euclROISize.height; ++r)
+                  {
+                      for (int s = 0; s < euclROISize.width; ++s)
+                      {
+                        const Ipp32f* pt1 = pWeightsAcumm + indexWeightsAcummBase + m_min;
+                          cout << pt1[r*stepBytesWeightsAcumm/sizeof(Ipp32f)+s] << " ";
+                      }
+                      cout <<endl;
+                  }*/
                 //Exploiting weights symmetry
                 status = ippiMul_32f_C1R(pEuclDist, stepBytesEuclDist, &pUSMImage[indexUSMImageBase + m_min], stepBytesUSM, pTmp, stepBytesTmp, euclROISize);
                 //Accumulate signal and weights 
@@ -144,12 +158,12 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
     status = ippiDiv_32f_C1IR(pWeightsAcumm, stepBytesWeightsAcumm, pDst, stepBytesDst, imageSize);
 
 
-    //ippiFree(pSqrDiff);
-    //ippiFree(pEuclDist);
-    //ippiFree(pTmpAcumm);
-    //ippiFree(pTmp);
-    //ippiFree(pWeightsAcumm);
-    //ippsFree(pBuffer);
+    ippiFree(pSumSqrDiff);
+    ippiFree(pEuclDist);
+    ippiFree(pTmpAcumm);
+    ippiFree(pTmp);
+    ippiFree(pWeightsAcumm);
+    ippsFree(pBuffer);
 
     return 1;
     

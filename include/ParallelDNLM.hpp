@@ -8,6 +8,7 @@
 #include <DNLMFilter.hpp>
 #include <NoAdaptiveUSM.hpp>
 #include <timer.h>
+#include <omp.h>
 
 using namespace cv;
 using namespace std;

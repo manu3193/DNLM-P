@@ -31,6 +31,8 @@ int main(int argc, char* argv[]){
             cout << "Could not read image from file." << endl;
             return -1;
         }
+
+    omp_set_num_threads(1);
     
     outputImage = parallelDNLM.processImage(inputImage);
 
@@ -49,11 +51,11 @@ int main(int argc, char* argv[]){
 
 Mat ParallelDNLM::processImage(const Mat& inputImage){
     //Set parameters for processing
-    int wRSize = 7;
-    int wSize_n=3;
+    int wRSize = 21;
+    int wSize_n=7;
     float kernelStd = 0.001f;
-    int kernelLen = 7;
-    float sigma_r = 0.5f; //13
+    int kernelLen = 3;
+    float sigma_r = 25.0f; //13
     float lambda = 3.0f;
     
     Mat fDeceivedNLM = filterDNLM(inputImage, wRSize, wSize_n, sigma_r, lambda, kernelLen, kernelStd);
@@ -114,6 +116,8 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     timerStart();
     
     this->noAdaptiveUSM.noAdaptiveUSM(pSrcwBorderImage, stepBytesSrcwBorder, pUSMImage, stepBytesUSM, imageROIwBorderSize, kernelStd, lambda, kernelLen);
+    ippiMulC_32f_C1IR(scaleFactor, pSrcwBorderImage, stepBytesSrcwBorder, imageROIwBorderSize);
+    ippiMulC_32f_C1IR(scaleFactor, pUSMImage, stepBytesUSM, imageROIwBorderSize);
     this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pUSMImage, stepBytesUSM, pFilteredImage, stepBytesFiltered, imageROIwBorderSize, wSize, wSize_n, sigma_r);
 
     double time = timerStop();
@@ -121,7 +125,7 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     //pfilteredImage pointer addition to remove padding
 
     //putting back everything
-    ippiMulC_32f_C1IR(scaleFactor, pFilteredImage, stepBytesFiltered, imageROISize);
+    //ippiMulC_32f_C1IR(scaleFactor, pFilteredImage, stepBytesFiltered, imageROISize);
     ippiConvert_32f8u_C1R(pFilteredImage, stepBytesFiltered, pDstImage , outputImage.step[0], imageROISize, ippRndFinancial);
     
     //Freeing memory
