@@ -64,7 +64,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
     status = ippiMulC_32f_C1R(pUSMImage, stepBytesUSM, (Ipp32f) 0.01f, pTmpAcumm, stepBytesTmpAcumm, imageSize);
 
     //For each distance between window patches
-    for (int dn = 0; dn <= wHalfLen+1; ++dn)
+    for (int dn = 0; dn < wHalfLen+1; ++dn)
     {   
         //Compute edges of the ROI        
         const int n_min = max(min(nHalfLen-dn, imageSize.height-nHalfLen),nHalfLen+1);
@@ -114,9 +114,9 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                 status = ippiAdd_32f_C1IR(pEuclDist, stepBytesEuclDist, (Ipp32f*) (pWeightsAcumm + indexWeightsAcummBase + m_min), stepBytesWeightsAcumm, euclROISize);
                 
                 //Exploiting weights symmetry
-                status = ippiMul_32f_C1R(pEuclDist, stepBytesEuclDist, &pUSMImage[indexUSMImageBase + m_min], stepBytesUSM, pTmp, stepBytesTmp, euclROISize);
+                status = ippiMul_32f_C1R(pEuclDist, stepBytesEuclDist, (Ipp32f*) (pUSMImage + indexUSMImageBase + m_min), stepBytesUSM, pTmp, stepBytesTmp, euclROISize);
                 //Accumulate signal and weights 
-                status = ippiAdd_32f_C1IR(pTmp, stepBytesTmp, &pDst[indexDstBaseWOffset + (m_min + dm)], stepBytesDst, euclROISize);
+                status = ippiAdd_32f_C1IR(pTmp, stepBytesTmp, (Ipp32f*) (pDst + indexDstBaseWOffset + (m_min + dm)), stepBytesDst, euclROISize);
                 status = ippiAdd_32f_C1IR(pEuclDist, stepBytesEuclDist, &pWeightsAcumm[indexWeightsAcummBaseWOffset + (m_min + dm)], stepBytesWeightsAcumm, euclROISize);
 
             }

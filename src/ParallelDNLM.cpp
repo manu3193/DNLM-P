@@ -125,7 +125,7 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     //Measure slapsed time
     double time = timerStop();
     //Convert back to uchar, add offset to pointer to remove border
-    ippiConvert_32f8u_C1R((Ipp32f*) (pFilteredImage + 2*imageTopLeftOffset*stepBytesFiltered/sizeof(Ipp32f)+2*imageTopLeftOffset), stepBytesFiltered, pDstImage , outputImage.step[0], imageROISize, ippRndFinancial);
+    ippiConvert_32f8u_C1R((Ipp32f*) (pFilteredImage + imageTopLeftOffset*stepBytesFiltered/sizeof(Ipp32f)+imageTopLeftOffset), stepBytesFiltered, pDstImage , outputImage.step[0], imageROISize, ippRndFinancial);
     
     //Freeing memory
     ippiFree(pSrc32fImage);
