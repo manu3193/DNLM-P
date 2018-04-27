@@ -28,7 +28,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
     //Ipp status variable
     int status;
     //Variable definition
-    Ipp32f *pEuclDist= NULL, *pSumSqrDiff= NULL, *pTmp = NULL, *pWeightsAcumm = NULL, *pTmpAcumm = NULL;
+    Ipp32f *pEuclDist= NULL, *pSumSqrDiff= NULL, *pTmp = NULL, *pWeightsAcumm = NULL;//, *pTmpAcumm = NULL;
     int stepSumSqrDiff = 0, stepBytesEuclDist = 0, stepBytesTmp= 0, stepBytesTmpAcumm = 0, stepBytesWeightsAcumm = 0;
     //Pointer to work buffer and buffer size for the BoxFilter
     Ipp8u *pBuffer = NULL;                                
@@ -50,18 +50,17 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
 
     //Allocate memory for correlation result and buffer
     pWeightsAcumm = ippiMalloc_32f_C1(imageSize.width, imageSize.height, &stepBytesWeightsAcumm);
-    pTmpAcumm = ippiMalloc_32f_C1(imageSize.width, imageSize.height, &stepBytesTmpAcumm);
+    //pTmpAcumm = ippiMalloc_32f_C1(imageSize.width, imageSize.height, &stepBytesTmpAcumm);
     
-    //Set buffers to 0
+    //Set buffer to 0
     ippiSet_32f_C1R((Ipp32f) 0.0f, pWeightsAcumm, stepBytesWeightsAcumm, imageSize);
-    ippiSet_32f_C1R((Ipp32f) 0.0f, pTmpAcumm, stepBytesTmpAcumm, imageSize);
 
     //Get buffer size for moving average filter
     status = ippiFilterBoxBorderGetBufferSize(convROISize, nROISize, ipp32f, 1, &bufSize);
     pBuffer = ippsMalloc_8u( bufSize );
 
     //Calculate attenuated USM image
-    status = ippiMulC_32f_C1R(pUSMImage, stepBytesUSM, (Ipp32f) 0.01f, pTmpAcumm, stepBytesTmpAcumm, imageSize);
+    //status = ippiMulC_32f_C1R(pUSMImage, stepBytesUSM, (Ipp32f) 0.01f, pTmpAcumm, stepBytesTmpAcumm, imageSize);
 
     //For each distance between window patches
     for (int dn = 0; dn < wHalfLen+1; ++dn)
@@ -124,8 +123,8 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
             else if (dn==0 && dm==0)
             {   
                 //Acummulate weights and filter result
-                status = ippiAddC_32f_C1IR((Ipp32f) 0.01f, pWeightsAcumm, stepBytesWeightsAcumm, imageSize );
-                status = ippiAdd_32f_C1IR(pTmpAcumm, stepBytesTmpAcumm, pDst, stepBytesDst, imageSize);
+                status = ippiAddC_32f_C1IR((Ipp32f) 1.0f, pWeightsAcumm, stepBytesWeightsAcumm, imageSize );
+                status = ippiAdd_32f_C1IR(pUSMImage, stepBytesUSM, pDst, stepBytesDst, imageSize);
             }
         }
     }
@@ -137,7 +136,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
 
     ippiFree(pSumSqrDiff);
     ippiFree(pEuclDist);
-    ippiFree(pTmpAcumm);
+    //ippiFree(pTmpAcumm);
     ippiFree(pTmp);
     ippiFree(pWeightsAcumm);
     ippsFree(pBuffer);
