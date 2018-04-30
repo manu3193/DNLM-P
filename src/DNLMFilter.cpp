@@ -54,7 +54,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
     ippiSet_32f_C1R((Ipp32f) 0.0f, pWeightsAcumm, stepBytesWeightsAcumm, imageSize);
 
     //Get buffer size for moving average filter
-    status = ippiFilterBoxBorderGetBufferSize(convROISize, nROISize, ipp32f, 1, &bufSize);
+    ippiFilterBoxBorderGetBufferSize(convROISize, nROISize, ipp32f, 1, &bufSize);
     pBuffer = ippsMalloc_8u( bufSize );
 
     //Calculate attenuated USM image
