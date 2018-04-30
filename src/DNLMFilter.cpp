@@ -98,12 +98,24 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                 status = ippiSqr_32f_C1IR(pSumSqrDiff, stepSumSqrDiff, euclROISize);
                 //Compute Squared Sum Difference unsing FilterBox
                 status = ippiFilterBoxBorder_32f_C1R(pSumSqrDiff, stepSumSqrDiff, pEuclDist, stepBytesEuclDist, euclROISize, nROISize, borderType, &borderValue, pBuffer);        
-
-                status = ippiSqrt_32f_C1IR(pEuclDist, stepBytesEuclDist, euclROISize);
                 status = ippiSqr_32f_C1IR(pEuclDist, stepBytesEuclDist, euclROISize);
+                status = ippiSqrt_32f_C1IR(pEuclDist, stepBytesEuclDist, euclROISize);
+                // //DEBUG
+                // cout << "exp res: "<<endl;
+                // for (int i = 0; i < euclROISize.height; ++i)
+                // {
+                //     for (int j = 0; j < euclROISize.width; ++j)
+                //     {
+                //         cout << pEuclDist[i*stepBytesEuclDist/sizeof(Ipp32f)+j]<< " ";
+                //     }
+                //     cout <<endl;
+                // }
+                
                 //Compute weights
                 status = ippiDivC_32f_C1IR((Ipp32f) -(sigma_r * sigma_r), pEuclDist, stepBytesEuclDist, euclROISize);
                 status = ippiExp_32f_C1IR(pEuclDist, stepBytesEuclDist, euclROISize);
+
+                
 
                 //Performing filtering
                 status = ippiMul_32f_C1R(pEuclDist, stepBytesEuclDist, (Ipp32f*) (pUSMImage +indexUSMImageBaseWOffset + (m_min + dm)), stepBytesUSM, pTmp, stepBytesTmp, euclROISize);
