@@ -25,8 +25,6 @@ int DNLMFilter::dnlmFilter(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, int
 
 //Implements dnlm filter for grayscale images.
 int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, const Ipp32f* pUSMImage, int stepBytesUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
-    //Ipp status variable
-    int status;
     //Variable definition
     Ipp32f *pEuclDist= NULL, *pSumSqrDiff= NULL, *pTmp = NULL, *pWeightsAcumm = NULL;//, *pTmpAcumm = NULL;
     int stepSumSqrDiff = 0, stepBytesEuclDist = 0, stepBytesTmp= 0, stepBytesTmpAcumm = 0, stepBytesWeightsAcumm = 0;
@@ -93,62 +91,49 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                 pTmp = ippiMalloc_32f_C1(euclROISize.width, euclROISize.height, &stepBytesTmp);
                 pEuclDist = ippiMalloc_32f_C1(euclROISize.width, euclROISize.height, &stepBytesEuclDist);
                 //Compute squared diference 
-                status = ippiSub_32f_C1R((Ipp32f*) (pSrcBorder +indexSrcImageBaseWOffset + (m_min + dm)), stepBytesSrcBorder, 
+                ippiSub_32f_C1R((Ipp32f*) (pSrcBorder +indexSrcImageBaseWOffset + (m_min + dm)), stepBytesSrcBorder, 
                     (Ipp32f*) (pSrcBorder + indexSrcImageBase + m_min), stepBytesSrcBorder, pSumSqrDiff, stepSumSqrDiff, euclROISize);
-                status = ippiSqr_32f_C1IR(pSumSqrDiff, stepSumSqrDiff, euclROISize);
+                ippiSqr_32f_C1IR(pSumSqrDiff, stepSumSqrDiff, euclROISize);
                 //Compute Squared Sum Difference unsing FilterBox
-                status = ippiFilterBoxBorder_32f_C1R(pSumSqrDiff, stepSumSqrDiff, pEuclDist, stepBytesEuclDist, euclROISize, nROISize, borderType, &borderValue, pBuffer);        
-                status = ippiSqr_32f_C1IR(pEuclDist, stepBytesEuclDist, euclROISize);
-                status = ippiSqrt_32f_C1IR(pEuclDist, stepBytesEuclDist, euclROISize);
-                // //DEBUG
-                // cout << "exp res: "<<endl;
-                // for (int i = 0; i < euclROISize.height; ++i)
-                // {
-                //     for (int j = 0; j < euclROISize.width; ++j)
-                //     {
-                //         cout << pEuclDist[i*stepBytesEuclDist/sizeof(Ipp32f)+j]<< " ";
-                //     }
-                //     cout <<endl;
-                // }
+                ippiFilterBoxBorder_32f_C1R(pSumSqrDiff, stepSumSqrDiff, pEuclDist, stepBytesEuclDist, euclROISize, nROISize, borderType, &borderValue, pBuffer);        
+                ippiSqr_32f_C1IR(pEuclDist, stepBytesEuclDist, euclROISize);
+                ippiSqrt_32f_C1IR(pEuclDist, stepBytesEuclDist, euclROISize);
                 
                 //Compute weights
-                status = ippiDivC_32f_C1IR((Ipp32f) -(sigma_r * sigma_r), pEuclDist, stepBytesEuclDist, euclROISize);
-                status = ippiExp_32f_C1IR(pEuclDist, stepBytesEuclDist, euclROISize);
-
-                
+                ippiDivC_32f_C1IR((Ipp32f) -(sigma_r * sigma_r), pEuclDist, stepBytesEuclDist, euclROISize);
+                ippiExp_32f_C1IR(pEuclDist, stepBytesEuclDist, euclROISize);          
 
                 //Performing filtering
-                status = ippiMul_32f_C1R(pEuclDist, stepBytesEuclDist, (Ipp32f*) (pUSMImage +indexUSMImageBaseWOffset + (m_min + dm)), stepBytesUSM, pTmp, stepBytesTmp, euclROISize);
+                ippiMul_32f_C1R(pEuclDist, stepBytesEuclDist, (Ipp32f*) (pUSMImage +indexUSMImageBaseWOffset + (m_min + dm)), stepBytesUSM, pTmp, stepBytesTmp, euclROISize);
                   
                 //Accumulate signal and weights
-                status = ippiAdd_32f_C1IR(pTmp, stepBytesTmp, (Ipp32f*) (pDst + indexDstBase + m_min), stepBytesDst, euclROISize);
-                status = ippiAdd_32f_C1IR(pEuclDist, stepBytesEuclDist, (Ipp32f*) (pWeightsAcumm + indexWeightsAcummBase + m_min), stepBytesWeightsAcumm, euclROISize);
+                ippiAdd_32f_C1IR(pTmp, stepBytesTmp, (Ipp32f*) (pDst + indexDstBase + m_min), stepBytesDst, euclROISize);
+                ippiAdd_32f_C1IR(pEuclDist, stepBytesEuclDist, (Ipp32f*) (pWeightsAcumm + indexWeightsAcummBase + m_min), stepBytesWeightsAcumm, euclROISize);
                 
                 //Exploiting weights symmetry
-                status = ippiMul_32f_C1R(pEuclDist, stepBytesEuclDist, (Ipp32f*) (pUSMImage + indexUSMImageBase + m_min), stepBytesUSM, pTmp, stepBytesTmp, euclROISize);
+                ippiMul_32f_C1R(pEuclDist, stepBytesEuclDist, (Ipp32f*) (pUSMImage + indexUSMImageBase + m_min), stepBytesUSM, pTmp, stepBytesTmp, euclROISize);
                 //Accumulate signal and weights 
-                status = ippiAdd_32f_C1IR(pTmp, stepBytesTmp, (Ipp32f*) (pDst + indexDstBaseWOffset + (m_min + dm)), stepBytesDst, euclROISize);
-                status = ippiAdd_32f_C1IR(pEuclDist, stepBytesEuclDist, &pWeightsAcumm[indexWeightsAcummBaseWOffset + (m_min + dm)], stepBytesWeightsAcumm, euclROISize);
+                ippiAdd_32f_C1IR(pTmp, stepBytesTmp, (Ipp32f*) (pDst + indexDstBaseWOffset + (m_min + dm)), stepBytesDst, euclROISize);
+                ippiAdd_32f_C1IR(pEuclDist, stepBytesEuclDist, &pWeightsAcumm[indexWeightsAcummBaseWOffset + (m_min + dm)], stepBytesWeightsAcumm, euclROISize);
 
             }
 
             else if (dn==0 && dm==0)
             {   
                 //Acummulate weights and filter result
-                status = ippiAddC_32f_C1IR((Ipp32f) 1.0f, pWeightsAcumm, stepBytesWeightsAcumm, imageSize );
-                status = ippiAdd_32f_C1IR(pUSMImage, stepBytesUSM, pDst, stepBytesDst, imageSize);
+                ippiAddC_32f_C1IR((Ipp32f) 1.0f, pWeightsAcumm, stepBytesWeightsAcumm, imageSize );
+                ippiAdd_32f_C1IR(pUSMImage, stepBytesUSM, pDst, stepBytesDst, imageSize);
             }
         }
     }
     //Threshold image
-    status = ippiThreshold_32f_C1IR(pWeightsAcumm, stepBytesWeightsAcumm, imageSize, 1e-20f,ippCmpLess);
+    ippiThreshold_32f_C1IR(pWeightsAcumm, stepBytesWeightsAcumm, imageSize, 1e-20f,ippCmpLess);
     //Normalize
-    status = ippiDiv_32f_C1IR(pWeightsAcumm, stepBytesWeightsAcumm, pDst, stepBytesDst, imageSize);
+    ippiDiv_32f_C1IR(pWeightsAcumm, stepBytesWeightsAcumm, pDst, stepBytesDst, imageSize);
 
 
     ippiFree(pSumSqrDiff);
     ippiFree(pEuclDist);
-    //ippiFree(pTmpAcumm);
     ippiFree(pTmp);
     ippiFree(pWeightsAcumm);
     ippsFree(pBuffer);
