@@ -27,10 +27,10 @@ int main(int argc, char* argv[]){
     //This version only works with grayscale images
     inputImage = imread(inputFile, IMREAD_GRAYSCALE);
     //Check for errors when loading image
-        if(!inputImage.data){
-            cout << "Could not read image from file." << endl;
-            return -1;
-        }
+    if(!inputImage.data){
+        cout << "Could not read image from file." << endl;
+        return -1;
+    }
     //Process image   
     outputImage = parallelDNLM.processImage(inputImage);
 
@@ -55,6 +55,10 @@ Mat ParallelDNLM::processImage(const Mat& inputImage){
     int kernelLen = 17;
     float sigma_r = 13.0f; //13
     float lambda = 3.0f;
+    //Compute number of threads
+    this->threads = omp_get_num_threads();
+    this->noAdaptiveUSM.setNumberThreads(threads);
+    this->dnlmFilter.setNumberThreads(threads);
     
     Mat fDeceivedNLM = filterDNLM(inputImage, wRSize, wSize_n, sigma_r, lambda, kernelLen, kernelStd);
 

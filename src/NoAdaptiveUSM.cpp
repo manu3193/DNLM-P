@@ -29,6 +29,11 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* p
 
     //Declare array for laplacian kernel
     Ipp32f pKernel[kernelLen * kernelLen] __attribute__((aligned(64)));
+
+    int chunkSize  = (roiSize.height + threads*2 - 1)/(threads*2);
+
+
+
     //Allocate memory for filtered image
     pFilteredImage = ippiMalloc_32f_C1(roiSize.width, roiSize.height, &stepBytesFiltered); 
 	//Allocate memory for filtered abs image
@@ -89,6 +94,9 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* p
 }
 
 
+void NoAdaptiveUSM::setNumberThreads(int num){
+    this->threads=num;
+}
 
 
 

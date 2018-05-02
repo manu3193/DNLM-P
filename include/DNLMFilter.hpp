@@ -15,8 +15,9 @@ class DNLMFilter{
 
 public:
 	int dnlmFilter(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, int srcType, const Ipp32f* pUSMImage, int stepBytesUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r);
-
+	void setNumberThreads(int num);
 private:
 	int dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, const Ipp32f* pUSMImage, int stepByteUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r);
+	int threads;
 };
 #endif /* DNLMFILTER_HPP_ */

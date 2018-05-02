@@ -21,6 +21,7 @@ public:
 private:
 	DNLMFilter dnlmFilter;
 	NoAdaptiveUSM noAdaptiveUSM;
+	int threads;
 	Mat filterDNLM(const Mat& U, int wSize, int wSize_n, float sigma_r, float lambda, int kernelLen, double kernelStd);
 };
 #endif /* PARALLELDNLM_HPP_ */
