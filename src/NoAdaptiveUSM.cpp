@@ -54,16 +54,17 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* p
         Ipp32f *pSrcT;
         Ipp32f *pFilteredT;
         IppiSize roiT;
-        
+        IppiBorderType borderTypeT;
         Ipp8u *pBuffer = NULL;                /* Pointer to the work buffer */
         IppiFilterBorderSpec* pSpec = NULL;   /* context structure */
+        Ipp32f borderValue = 0.0;
 
         //Allocating filter buffer and specification
         pSpec = (IppiFilterBorderSpec *)ippsMalloc_8u(iSpecSize);
         pBuffer = ippsMalloc_8u(iTmpBufSize);
 
         #pragma omp for
-        for (row = 0; row < roiSize.height; row += roiChunk.height)
+        for (int row = 0; row < roiSize.height; row += roiChunk.height)
         {
             borderTypeT = borderType;
             roiT = roiChunk;
@@ -80,8 +81,11 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* p
             //Initializing filter
             status = ippiFilterBorderInit_32f(pKernel, kernelSize, ipp32f, numChannels, ippRndFinancial, pSpec);
             //Applying filter
-            status = ippiFilterBorder_32f_C1R(pSrcT, stepBytesSrc, pFilteredT, stepBytesFiltered, roiT, borderTypeT, NULL, pSpec, pBuffer); 
+            status = ippiFilterBorder_32f_C1R(pSrcT, stepBytesSrc, pFilteredT, stepBytesFiltered, roiT, borderType, NULL, pSpec, pBuffer); 
         }
+
+        ippsFree(pBuffer);
+        ippsFree(pSpec);
 
     }
 
@@ -109,9 +113,6 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* p
     
 
     //Free memory
-    ippsFree(pBuffer);
-    ippsFree(pSpec);
-    //ippiFree(pKernel);
     ippiFree(pFilteredImage);
     ippiFree(pFilteredAbsImage);
 
