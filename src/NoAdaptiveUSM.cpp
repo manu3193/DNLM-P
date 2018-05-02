@@ -13,11 +13,8 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* p
 
     IppStatus status = ippStsNoErr;
     Ipp32f *pFilteredImage = NULL, *pFilteredAbsImage = NULL;
-    Ipp8u *pBuffer = NULL;                /* Pointer to the work buffer */
-    IppiFilterBorderSpec* pSpec = NULL;   /* context structure */
     int iTmpBufSize = 0, iSpecSize = 0;   /* Common work buffer size */
     IppiBorderType borderType = ippBorderRepl;
-    Ipp32f borderValue = 0.0;
     const IppiSize  kernelSize = { kernelLen, kernelLen };
     //Apply USM only in L component of Lab colorspase. Working with grayscale at the momment. 
     const int numChannels = 1;
@@ -32,7 +29,7 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* p
 
     int chunkSize  = (roiSize.height + threads*2 - 1)/(threads*2);
 
-
+    const IppiSize roiChunk = {roiSize.width, chunkSize};
 
     //Allocate memory for filtered image
     pFilteredImage = ippiMalloc_32f_C1(roiSize.width, roiSize.height, &stepBytesFiltered); 
@@ -50,17 +47,45 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* p
 
     //aplying high pass filter
     //Calculating filter buffer size
-    status = ippiFilterBorderGetSize(kernelSize, roiSize, ipp32f, ipp32f, numChannels, &iSpecSize, &iTmpBufSize);
+    status = ippiFilterBorderGetSize(kernelSize, roiChunk, ipp32f, ipp32f, numChannels, &iSpecSize, &iTmpBufSize);
 
-    //Allocating filter buffer and specification
-    pSpec = (IppiFilterBorderSpec *)ippsMalloc_8u(iSpecSize);
-    pBuffer = ippsMalloc_8u(iTmpBufSize);
+    #pragma omp parallel num_threads(this->threads)
+    {
+        Ipp32f *pSrcT;
+        Ipp32f *pFilteredT;
+        IppiSize roiT;
+        
+        Ipp8u *pBuffer = NULL;                /* Pointer to the work buffer */
+        IppiFilterBorderSpec* pSpec = NULL;   /* context structure */
 
-    //Initializing filter
-    status = ippiFilterBorderInit_32f(pKernel, kernelSize, ipp32f, numChannels, ippRndFinancial, pSpec);
-    //Applying filter
-    status = ippiFilterBorder_32f_C1R(pSrc, stepBytesSrc, pFilteredImage, stepBytesFiltered, roiSize, borderType, &borderValue, pSpec, pBuffer); 
+        //Allocating filter buffer and specification
+        pSpec = (IppiFilterBorderSpec *)ippsMalloc_8u(iSpecSize);
+        pBuffer = ippsMalloc_8u(iTmpBufSize);
 
+        #pragma omp for
+        for (row = 0; row < roiSize.height; row += roiChunk.height)
+        {
+            borderTypeT = borderType;
+            roiT = roiChunk;
+            if(row)
+                borderTypeT = (IppiBorderType)(borderTypeT|ippBorderInMemTop);
+            if (row + roiChunk.height >= roiSize.height)
+                roiT.height = roiSize.height - row;
+            else
+                borderTypeT = (IppiBorderType)(borderTypeT|ippBorderInMemBottom);
+
+            pSrcT = (Ipp32f*) (pSrc + stepBytesSrc*row);  
+            pFilteredT = (Ipp32f*) (pDst + stepBytesFiltered*row); 
+
+            //Initializing filter
+            status = ippiFilterBorderInit_32f(pKernel, kernelSize, ipp32f, numChannels, ippRndFinancial, pSpec);
+            //Applying filter
+            status = ippiFilterBorder_32f_C1R(pSrcT, stepBytesSrc, pFilteredT, stepBytesFiltered, roiT, borderTypeT, NULL, pSpec, pBuffer); 
+        }
+
+    }
+
+    
     //Normalization
     //Get Src image max and min values
     status = ippiMinMax_32f_C1R(pSrc, stepBytesSrc, roiSize, &minSrc, &maxSrc);
