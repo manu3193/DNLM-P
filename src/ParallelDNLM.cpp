@@ -57,7 +57,6 @@ Mat ParallelDNLM::processImage(const Mat& inputImage){
     float lambda = 3.0f;
     //Compute number of threads
     this->threads = omp_get_max_threads();
-    this->noAdaptiveUSM.setNumberThreads(threads);
     //this->dnlmFilter.setNumberThreads(threads);
     this->dnlmFilter.setNumberThreads(threads);
     
