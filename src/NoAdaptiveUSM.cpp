@@ -29,7 +29,7 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* p
 
     int chunkSize  = (roiSize.height + threads*2 - 1)/(threads*2);
 
-    const IppiSize roiChunk = {roiSize.width, chunkSize};
+    IppiSize roiChunk = {roiSize.width, chunkSize};
 
     //Allocate memory for filtered image
     pFilteredImage = ippiMalloc_32f_C1(roiSize.width, roiSize.height, &stepBytesFiltered); 
@@ -48,6 +48,7 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* p
     //aplying high pass filter
     //Calculating filter buffer size
     status = ippiFilterBorderGetSize(kernelSize, roiChunk, ipp32f, ipp32f, numChannels, &iSpecSize, &iTmpBufSize);
+
 
     #pragma omp parallel num_threads(this->threads)
     {
@@ -75,21 +76,19 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* p
             else
                 borderTypeT = (IppiBorderType)(borderTypeT|ippBorderInMemBottom);
 
-            pSrcT = (Ipp32f*) (pSrc + stepBytesSrc*row);  
-            pFilteredT = (Ipp32f*) (pDst + stepBytesFiltered*row); 
+            pSrcT = (Ipp32f*) (pSrc + stepBytesSrc*row);
+            pFilteredT = (Ipp32f*) (pFilteredImage + stepBytesFiltered*row);
 
             //Initializing filter
             status = ippiFilterBorderInit_32f(pKernel, kernelSize, ipp32f, numChannels, ippRndFinancial, pSpec);
             //Applying filter
-            status = ippiFilterBorder_32f_C1R(pSrcT, stepBytesSrc, pFilteredT, stepBytesFiltered, roiT, borderType, NULL, pSpec, pBuffer); 
+            status = ippiFilterBorder_32f_C1R(pSrcT, stepBytesSrc, pFilteredT, stepBytesFiltered, roiT, borderType, &borderValue, pSpec, pBuffer);
         }
+
 
         ippsFree(pBuffer);
         ippsFree(pSpec);
-
     }
-
-    
     //Normalization
     //Get Src image max and min values
     status = ippiMinMax_32f_C1R(pSrc, stepBytesSrc, roiSize, &minSrc, &maxSrc);
@@ -113,6 +112,7 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* p
     
 
     //Free memory
+    //ippiFree(pKernel);
     ippiFree(pFilteredImage);
     ippiFree(pFilteredAbsImage);
 
