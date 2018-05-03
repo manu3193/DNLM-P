@@ -13,9 +13,7 @@ class NoAdaptiveUSM{
 public:
 	int generateLoGKernel(const int size, const float sigma, Ipp32f* pKernel );
 	int noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* pDst, int stepByteDst, const IppiSize roiSize, const float sigma, const float lambda, const int kernelLen);
-	void setNumberThreads(int num);
 private:
-	int threads;
 
 };
 #endif /* NOADAPTIVEUSM_HPP_ */

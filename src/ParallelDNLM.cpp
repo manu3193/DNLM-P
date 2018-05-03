@@ -121,17 +121,16 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     timerStart();
     //Applying USM Filter
     this->noAdaptiveUSM.noAdaptiveUSM(pSrcwBorderImage, stepBytesSrcwBorder, pUSMImage, stepBytesUSM, imageROIwBorderSize, kernelStd, lambda, kernelLen);
-    double time = timerStop();
     //Gossens version doesnt works with normalized images
     ippiMulC_32f_C1IR(scaleFactor, pSrcwBorderImage, stepBytesSrcwBorder, imageROIwBorderSize);
     ippiMulC_32f_C1IR(scaleFactor, pUSMImage, stepBytesUSM, imageROIwBorderSize);
     //Aplying DNLM filter
     this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pUSMImage, stepBytesUSM, pFilteredImage, stepBytesFiltered, imageROIwBorderSize, wSize, wSize_n, sigma_r);
     //Measure slapsed time
-    /*double time = timerStop();*/
+    double time = timerStop();
     //Convert back to uchar, add offset to pointer to remove border
-    //ippiConvert_32f8u_C1R((Ipp32f*) (pFilteredImage + imageTopLeftOffset*stepBytesFiltered/sizeof(Ipp32f)+imageTopLeftOffset), stepBytesFiltered, pDstImage , outputImage.step[0], imageROISize, ippRndFinancial);
-    ippiConvert_32f8u_C1R(pUSMImage, stepBytesUSM, pDstImage , outputImage.step[0], imageROISize, ippRndFinancial);
+    ippiConvert_32f8u_C1R((Ipp32f*) (pFilteredImage + imageTopLeftOffset*stepBytesFiltered/sizeof(Ipp32f)+imageTopLeftOffset), stepBytesFiltered, pDstImage , outputImage.step[0], imageROISize, ippRndFinancial);
+    //ippiConvert_32f8u_C1R(pUSMImage, stepBytesUSM, pDstImage , outputImage.step[0], imageROISize, ippRndFinancial);
     
     //Freeing memory
     ippiFree(pSrc32fImage);
