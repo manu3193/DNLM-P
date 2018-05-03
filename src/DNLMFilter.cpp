@@ -31,7 +31,7 @@ void DNLMFilter::setNumberThreads(int num){
 //Implements dnlm filter for grayscale images.
 int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, const Ipp32f* pUSMImage, int stepBytesUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
     //Variable definition
-    Ipp32f *pWeightsAcumm = NULL;//, *pTmpAcumm = NULL;
+    Ipp32f *pWeightsAcumm __attribute__((aligned(64)));//, *pTmpAcumm = NULL;
     int stepBytesWeightsAcumm = 0;
     //Compute neighborhood and window half length
     const int nHalfLen = floor(w_n/2);
@@ -52,20 +52,22 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
     //Get buffer size for moving average filter
     ippiFilterBoxBorderGetBufferSize(convROISize, nROISize, ipp32f, 1, &bufSize);
 
-    #pragma omp parallel num_threads(this->threads)
+    #pragma omp parallel num_threads(this->threads) shared(pWeightsAcumm,pDst)
     {
-        Ipp32f *pEuclDist= NULL, *pSumSqrDiff= NULL, *pTmp = NULL;
-        int stepSumSqrDiff = 0, stepBytesEuclDist = 0, stepBytesTmp= 0, stepBytesTmpAcumm = 0;
+        Ipp32f *pEuclDist __attribute__((aligned(64)));
+        Ipp32f *pSumSqrDiff __attribute__((aligned(64)));
+        Ipp32f *pTmp __attribute__((aligned(64)));
+        int stepSumSqrDiff = 0, stepBytesEuclDist = 0, stepBytesTmp= 0;
         IppiBorderType borderType = ippBorderConst;
         const Ipp32f borderValue = 0;
         //Pointer to work buffer and buffer size for the BoxFilter
-        Ipp8u *pBuffer = NULL;               
+        Ipp8u *pBuffer __attribute__((aligned(64)));;               
 
         pBuffer = ippsMalloc_8u( bufSize );
 
 
         //For each distance between window patches
-        #pragma omp parallel for shared(pWeightsAcumm,pDst)
+        #pragma omp for 
         for (int dn = 0; dn < wHalfLen+1; ++dn)
         {   
             //Compute edges of the ROI        
