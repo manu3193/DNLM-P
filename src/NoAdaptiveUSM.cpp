@@ -164,7 +164,7 @@ int NoAdaptiveUSM::generateLoGKernel(const int size,const float sigma, Ipp32f* p
 	status = ippiSum_32f_C1R(pLaplTerm, stepBytesLaplTerm, roiSize, &sumLaplTerm, ippAlgHintNone);	
 	status = ippiAddC_32f_C1IR((Ipp32f) -sumLaplTerm/(size*size), pLaplTerm, stepBytesLaplTerm, roiSize);
 
-    #pragma omp parallel for
+    #pragma vector aligned
     for (int j = 0; j < size; ++j)
     {
         const int indexBaseLaplTerm = j*(stepBytesLaplTerm/sizeof(Ipp32f));
