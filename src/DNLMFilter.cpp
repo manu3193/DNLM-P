@@ -39,7 +39,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
     #pragma omp parallel shared(pDst,pUSMImage,pSrcBorder) 
     {
         //Variable to store status
-        Ipp32f *pEuclDist = NULL;
+        Ipp32f *pEuclDist __attribute__((aligned(64)));
         int stepBytesEuclDist = 0;
          //Variable to store summation result of filter response dor normalization
         Ipp64f sumExpTerm = 0, filterResult = 0, euclDistResult = 0;
@@ -60,11 +60,13 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                 const Ipp32f *pNeighborhoodStartIJ = &pSrcBorder[indexNeighborIJBase + (i + neighborhoodStartOffset)];
                 const Ipp32f *pUSMWindowStart = &pUSMImage[indexUSMWindowBase+(i + windowTopLeftOffset)];
 
+                #pragma vector aligned
                 for (int n = 0; n < windowSize.height; ++n)
                 {
                     const int indexEuclDistBase = n * (stepBytesEuclDist/sizeof(Ipp32f));
                     const int indexNeighborNMBase = n * (stepBytesSrcBorder/sizeof(Ipp32f));
 
+                    #pragma vector aligned
                     for (int m = 0; m < windowSize.width; ++m)
                     {
                         const Ipp32f *pNeighborhoodStartNM = &pWindowStart[indexNeighborNMBase + m];
