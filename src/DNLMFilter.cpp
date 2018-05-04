@@ -25,10 +25,6 @@ int DNLMFilter::dnlmFilter(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, int
 
 //Implements dnlm filter for grayscale images.
 int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, const Ipp32f* pUSMImage, int stepBytesUSM, const Ipp32f* pSqrIntegralImage, int stepBytesSqrIntegral, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
-    int bufSize=0;
-
-    //Variable to store summation result of filter response dor normalization
-    Ipp64f sumExpTerm = 0, filterResult = 0;
     //Configuration for the correlation primitive
     IppEnum corrAlgCfg = (IppEnum) (ippAlgAuto | ippiNormNone | ippiROIValid);
     //Compute border offset for border replicated image
@@ -41,35 +37,37 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
     const IppiSize windowSize = {w, w};
     const IppiSize windowBorderSize = {w + 2*windowTopLeftOffset, w + 2*windowTopLeftOffset};
     const IppiSize neighborhoodSize = {w_n, w_n};
+    //buffsize
+    int bufSize=0;
 
     //Get correlation method buffer size
     ippiCrossCorrNormGetBufferSize(windowBorderSize, neighborhoodSize, corrAlgCfg, &bufSize);
 
-    #pragma omp parallel  shared(pDst)
+    #pragma omp parallel shared(pDst,pSrcBorder,pUSMImage,pSqrIntegralImage)
     {
         //Variable definition
         Ipp32f *pWindowIJCorr __attribute__((aligned(64)));
-        Ipp32f *pEuclDist __attribute__((aligned(64)));;
+        Ipp32f *pEuclDist __attribute__((aligned(64)));
         int stepBytesWindowIJCorr = 0, stepBytesEuclDist = 0;
-        Ipp8u *pBuffer;
+        Ipp8u *pBuffer __attribute__((aligned(64)));
+        //Variable to store summation result of filter response dor normalization
+        Ipp64f sumExpTerm = 0, filterResult = 0;
         //Allocate memory for correlation result and buffer
         pWindowIJCorr = ippiMalloc_32f_C1(windowSize.width, windowSize.height, &stepBytesWindowIJCorr);
         pEuclDist = ippiMalloc_32f_C1(windowSize.width, windowSize.height, &stepBytesEuclDist);
         pBuffer = ippsMalloc_8u( bufSize );
 
-        #pragma omp for 
+        #pragma omp for collapse(2)
         for (int j = 0; j < imageSize.height; ++j)
         {
-            const int indexPdstBase = j*(stepBytesDst/sizeof(Ipp32f));
-            const int indexWindowStartBase = j*(stepBytesSrcBorder/sizeof(Ipp32f));
-            const int indexNeighborIJBase = (j + neighborhoodStartOffset)*(stepBytesSrcBorder/sizeof(Ipp32f));
-            const int indexUSMWindowBase =(j + windowTopLeftOffset)*(stepBytesUSM/sizeof(Ipp32f));
-            const int indexIINeighborIJBase = (j + neighborhoodStartOffset)*(stepBytesSqrIntegral/sizeof(Ipp32f));
-            const int indexIINeighborIJBaseWOffset = (j + neighborhoodStartOffset + iIRightBottomOffset)*(stepBytesSqrIntegral/sizeof(Ipp32f));
-
-            #pragma vector aligned
             for (int i = 0; i < imageSize.width; ++i)
             {
+                const int indexPdstBase = j*(stepBytesDst/sizeof(Ipp32f));
+                const int indexWindowStartBase = j*(stepBytesSrcBorder/sizeof(Ipp32f));
+                const int indexNeighborIJBase = (j + neighborhoodStartOffset)*(stepBytesSrcBorder/sizeof(Ipp32f));
+                const int indexUSMWindowBase =(j + windowTopLeftOffset)*(stepBytesUSM/sizeof(Ipp32f));
+                const int indexIINeighborIJBase = (j + neighborhoodStartOffset)*(stepBytesSqrIntegral/sizeof(Ipp32f));
+                const int indexIINeighborIJBaseWOffset = (j + neighborhoodStartOffset + iIRightBottomOffset)*(stepBytesSqrIntegral/sizeof(Ipp32f));
                 //Get summation of (i,j) neighborhood area
                 const Ipp32f sqrSumIJNeighborhood = pSqrIntegralImage[indexIINeighborIJBaseWOffset + (i + neighborhoodStartOffset+ iIRightBottomOffset)] 
                                                     + pSqrIntegralImage[indexIINeighborIJBase + (i + neighborhoodStartOffset)] 
@@ -114,9 +112,6 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                 ippiSum_32f_C1R(pEuclDist, stepBytesEuclDist, windowSize, &filterResult, ippAlgHintNone);
 
                 pDst[indexPdstBase+i] = (Ipp32f) (filterResult/ sumExpTerm);
-                //cout << pDst[j*(stepBytesDst/sizeof(Ipp32f))+i] << " ";
-
-                //if(status!=ippStsNoErr) cout << "Error " << status << endl;
 
             }
         }
