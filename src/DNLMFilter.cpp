@@ -60,13 +60,13 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                 const Ipp32f *pNeighborhoodStartIJ = &pSrcBorder[indexNeighborIJBase + (i + neighborhoodStartOffset)];
                 const Ipp32f *pUSMWindowStart = &pUSMImage[indexUSMWindowBase+(i + windowTopLeftOffset)];
 
-                #pragma vector aligned
+                
                 for (int n = 0; n < windowSize.height; ++n)
                 {
                     const int indexEuclDistBase = n * (stepBytesEuclDist/sizeof(Ipp32f));
                     const int indexNeighborNMBase = n * (stepBytesSrcBorder/sizeof(Ipp32f));
 
-                    #pragma vector aligned
+                    
                     for (int m = 0; m < windowSize.width; ++m)
                     {
                         const Ipp32f *pNeighborhoodStartNM = &pWindowStart[indexNeighborNMBase + m];
