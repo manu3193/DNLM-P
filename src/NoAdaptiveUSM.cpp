@@ -116,10 +116,7 @@ int NoAdaptiveUSM::generateLoGKernel(const int size,const float sigma, Ipp32f* p
     roiSize.width = size;
     roiSize.height = size;
 
-    Ipp32f* pRadXY __attribute__((aligned(64)));
-    Ipp32f* pExpTerm __attribute__((aligned(64)));
-    Ipp32f* pLaplTerm __attribute__((aligned(64)));
-
+    Ipp32f *pRadXY, *pExpTerm, *pLaplTerm = NULL;
 	//Allocate memory for matrix to store (x*x + y*y) term. 
     pRadXY =  ippiMalloc_32f_C1(size, size, &stepBytesRadXY);
 	//Allocate memory for matrix to store exponential term. 
@@ -127,21 +124,21 @@ int NoAdaptiveUSM::generateLoGKernel(const int size,const float sigma, Ipp32f* p
 	//Copy Dst buffer dir to pointer for laplacian term. 
     pLaplTerm =  ippiMalloc_32f_C1(size, size, &stepBytesLaplTerm);
 
-	#pragma vector aligned
+	
 	for (int j = 0; j < size; ++j)
 	{
-        const int indexRadXY = j*(stepBytesRadXY/sizeof(Ipp32f));
-        const int indexExpTerm = j*(stepBytesExpTerm/sizeof(Ipp32f));
-        const Ipp32f x_quad = (j - halfSize) * (j - halfSize);
+        int indexRadXY = j*(stepBytesRadXY/sizeof(Ipp32f));
+        int indexExpTerm = j*(stepBytesExpTerm/sizeof(Ipp32f));
+        Ipp32f x_quad = (j - halfSize) * (j - halfSize);
         
-        #pragma vector aligned
+        #pragma omp simd aligned(pRadXY,pExpTerm:64) private(j,x_quad) linear(indexRadXY,indexExpTerm:1) reduction(+:sumExpTerm)
 		for (int i = 0; i < size; ++i)
 		{
 			//Compute radial distance term (x*x + y*y) and exponential term
-			pRadXY[indexRadXY + i] = (Ipp32f) ( x_quad + (i - halfSize) * (i - halfSize));
-			pExpTerm[indexExpTerm + i] = (Ipp32f) exp(pRadXY[indexRadXY + i] / (-2*std2));
+			pRadXY[indexRadXY] = (Ipp32f) ( x_quad + (i - halfSize) * (i - halfSize));
+			pExpTerm[indexExpTerm] = (Ipp32f) exp(pRadXY[indexRadXY] / (-2*std2));
 			//Store summation of the exponential result to normalize it
-			sumExpTerm += pExpTerm[indexExpTerm + i];
+			sumExpTerm += pExpTerm[indexExpTerm];
 		}
 	}
 
@@ -164,16 +161,16 @@ int NoAdaptiveUSM::generateLoGKernel(const int size,const float sigma, Ipp32f* p
 	status = ippiSum_32f_C1R(pLaplTerm, stepBytesLaplTerm, roiSize, &sumLaplTerm, ippAlgHintNone);	
 	status = ippiAddC_32f_C1IR((Ipp32f) -sumLaplTerm/(size*size), pLaplTerm, stepBytesLaplTerm, roiSize);
 
-    #pragma vector aligned
+    
     for (int j = 0; j < size; ++j)
     {
-        const int indexBaseLaplTerm = j*(stepBytesLaplTerm/sizeof(Ipp32f));
-        const int indexBaseKernel = j*(size);
+        int indexBaseLaplTerm = j*(stepBytesLaplTerm/sizeof(Ipp32f));
+        int indexBaseKernel = j*(size);
         
-        #pragma vector aligned
+        #pragma omp simd aligned(pKernel:64) private(j) linear(indexBaseKernel,indexBaseLaplTerm:1)
         for (int i = 0; i < size; ++i)
         {
-            pKernel[indexBaseKernel+i] = -pLaplTerm[indexBaseLaplTerm + i];
+            pKernel[indexBaseKernel] = -pLaplTerm[indexBaseLaplTerm];
         }
     }
 
