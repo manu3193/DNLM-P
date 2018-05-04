@@ -68,7 +68,10 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     IppStatus status = ippStsNoErr;
 
     //Pointers to IPP type images 
-    Ipp32f *pSrc32fImage = NULL, *pSrcwBorderImage = NULL, *pUSMImage = NULL, *pFilteredImage= NULL;
+    Ipp32f *pSrc32fImage __attribute__((aligned(64)));
+    Ipp32f *pSrcwBorderImage __attribute__((aligned(64)));
+    Ipp32f *pUSMImage __attribute__((aligned(64)));
+    Ipp32f *pFilteredImage __attribute__((aligned(64)));
 
     //Variable to store image step size in bytes 
     int stepBytesSrc = 0;
