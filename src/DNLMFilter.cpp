@@ -52,7 +52,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
     //Get buffer size for moving average filter
     ippiFilterBoxBorderGetBufferSize(convROISize, nROISize, ipp32f, 1, &bufSize);
 
-    #pragma omp parallel num_threads(this->threads) shared(pWeightsAcumm,pDst)
+    #pragma omp parallel shared(pWeightsAcumm,pDst) //private(dn,dm,pBuffer,pEuclDist,pSumSqrDiff,pTmp)
     {
         Ipp32f *pEuclDist __attribute__((aligned(64)));
         Ipp32f *pSumSqrDiff __attribute__((aligned(64)));
@@ -67,27 +67,27 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
 
 
         //For each distance between window patches
-        #pragma omp for 
+        #pragma omp for collapse(2)
         for (int dn = 0; dn < wHalfLen+1; ++dn)
         {   
-            //Compute edges of the ROI        
-            const int n_min = max(min(nHalfLen-dn, imageSize.height-nHalfLen),nHalfLen+1);
-            const int n_max = min(max(imageSize.height-nHalfLen-1-dn, nHalfLen),imageSize.height-nHalfLen-1);
-            //Compute array base index
-            const int indexSrcImageBase = n_min*(stepBytesSrcBorder/sizeof(Ipp32f));
-            const int indexSrcImageBaseWOffset = (n_min + dn)*(stepBytesSrcBorder/sizeof(Ipp32f));
-            const int indexWeightsAcummBase= n_min*(stepBytesWeightsAcumm/sizeof(Ipp32f));
-            const int indexWeightsAcummBaseWOffset= (n_min + dn)*(stepBytesWeightsAcumm/sizeof(Ipp32f));
-            const int indexUSMImageBase = n_min*(stepBytesUSM/sizeof(Ipp32f));
-            const int indexUSMImageBaseWOffset = (n_min + dn)*(stepBytesUSM/sizeof(Ipp32f));
-            const int indexDstBase= n_min*(stepBytesDst/sizeof(Ipp32f));
-            const int indexDstBaseWOffset= (n_min + dn)*(stepBytesDst/sizeof(Ipp32f));
-            
+            //#pragma omp parallel for shared(pWeightsAcumm,pDst) private(dn,pBuffer,pEuclDist,pSumSqrDiff,pTmp)
             for (int dm = 0; dm < wHalfLen+1; ++dm)
             {
                 //Exploit symmetry
                 if (dn>0 || (dn==0 && dm>0))
                 {
+                    //Compute edges of the ROI        
+                    const int n_min = max(min(nHalfLen-dn, imageSize.height-nHalfLen),nHalfLen+1);
+                    const int n_max = min(max(imageSize.height-nHalfLen-1-dn, nHalfLen),imageSize.height-nHalfLen-1);
+                    //Compute array base index
+                    const int indexSrcImageBase = n_min*(stepBytesSrcBorder/sizeof(Ipp32f));
+                    const int indexSrcImageBaseWOffset = (n_min + dn)*(stepBytesSrcBorder/sizeof(Ipp32f));
+                    const int indexWeightsAcummBase= n_min*(stepBytesWeightsAcumm/sizeof(Ipp32f));
+                    const int indexWeightsAcummBaseWOffset= (n_min + dn)*(stepBytesWeightsAcumm/sizeof(Ipp32f));
+                    const int indexUSMImageBase = n_min*(stepBytesUSM/sizeof(Ipp32f));
+                    const int indexUSMImageBaseWOffset = (n_min + dn)*(stepBytesUSM/sizeof(Ipp32f));
+                    const int indexDstBase= n_min*(stepBytesDst/sizeof(Ipp32f));
+                    const int indexDstBaseWOffset= (n_min + dn)*(stepBytesDst/sizeof(Ipp32f));
                     //Compute edges of ROI
                     const int m_min = max(min(nHalfLen-dm,imageSize.width-nHalfLen),nHalfLen+1);
                     const int m_max = min(max(imageSize.width-nHalfLen-1-dm, nHalfLen),imageSize.width-nHalfLen-1);
@@ -123,6 +123,9 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                     ippiAdd_32f_C1IR(pTmp, stepBytesTmp, (Ipp32f*) (pDst + indexDstBaseWOffset + (m_min + dm)), stepBytesDst, euclROISize);
                     ippiAdd_32f_C1IR(pEuclDist, stepBytesEuclDist, &pWeightsAcumm[indexWeightsAcummBaseWOffset + (m_min + dm)], stepBytesWeightsAcumm, euclROISize);
 
+                    ippiFree(pSumSqrDiff);
+                    ippiFree(pEuclDist);
+                    ippiFree(pTmp);
                 }
 
                 else if (dn==0 && dm==0)
@@ -132,11 +135,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                     ippiAdd_32f_C1IR(pUSMImage, stepBytesUSM, pDst, stepBytesDst, imageSize);
                 }
             }
-        }
-
-        ippiFree(pSumSqrDiff);
-        ippiFree(pEuclDist);
-        ippiFree(pTmp);
+        }        
         ippsFree(pBuffer);
     }
 
