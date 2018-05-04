@@ -127,13 +127,14 @@ int NoAdaptiveUSM::generateLoGKernel(const int size,const float sigma, Ipp32f* p
 	//Copy Dst buffer dir to pointer for laplacian term. 
     pLaplTerm =  ippiMalloc_32f_C1(size, size, &stepBytesLaplTerm);
 
-	#pragma omp parallel for
+	#pragma vector aligned
 	for (int j = 0; j < size; ++j)
 	{
         const int indexRadXY = j*(stepBytesRadXY/sizeof(Ipp32f));
         const int indexExpTerm = j*(stepBytesExpTerm/sizeof(Ipp32f));
         const Ipp32f x_quad = (j - halfSize) * (j - halfSize);
-                #pragma vector aligned
+        
+        #pragma vector aligned
 		for (int i = 0; i < size; ++i)
 		{
 			//Compute radial distance term (x*x + y*y) and exponential term
