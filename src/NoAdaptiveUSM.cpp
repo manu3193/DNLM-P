@@ -12,8 +12,9 @@ int NoAdaptiveUSM::noAdaptiveUSM(const Ipp32f* pSrc, int stepBytesSrc, Ipp32f* p
     }
 
     IppStatus status = ippStsNoErr;
-    Ipp32f *pFilteredImage = NULL, *pFilteredAbsImage = NULL;
-    Ipp8u *pBuffer = NULL;                /* Pointer to the work buffer */
+    Ipp32f *pFilteredImage __attribute__((aligned(64)));
+    Ipp32f *pFilteredAbsImage __attribute__((aligned(64)));;
+    Ipp8u *pBuffer __attribute__((aligned(64)));;                /* Pointer to the work buffer */
     IppiFilterBorderSpec* pSpec = NULL;   /* context structure */
     int iTmpBufSize = 0, iSpecSize = 0;   /* Common work buffer size */
     IppiBorderType borderType = ippBorderRepl;
@@ -116,7 +117,9 @@ int NoAdaptiveUSM::generateLoGKernel(const int size,const float sigma, Ipp32f* p
     roiSize.width = size;
     roiSize.height = size;
 
-    Ipp32f *pRadXY, *pExpTerm, *pLaplTerm = NULL;
+    Ipp32f *pRadXY __attribute__((aligned(64)));
+    Ipp32f *pExpTerm __attribute__((aligned(64)));
+    Ipp32f *pLaplTerm __attribute__((aligned(64)));
 	//Allocate memory for matrix to store (x*x + y*y) term. 
     pRadXY =  ippiMalloc_32f_C1(size, size, &stepBytesRadXY);
 	//Allocate memory for matrix to store exponential term. 
@@ -131,14 +134,14 @@ int NoAdaptiveUSM::generateLoGKernel(const int size,const float sigma, Ipp32f* p
         int indexExpTerm = j*(stepBytesExpTerm/sizeof(Ipp32f));
         Ipp32f x_quad = (j - halfSize) * (j - halfSize);
         
-        #pragma omp simd aligned(pRadXY,pExpTerm:64) private(j,x_quad) linear(indexRadXY,indexExpTerm:1) reduction(+:sumExpTerm)
+        #pragma vector aligned
 		for (int i = 0; i < size; ++i)
 		{
 			//Compute radial distance term (x*x + y*y) and exponential term
-			pRadXY[indexRadXY] = (Ipp32f) ( x_quad + (i - halfSize) * (i - halfSize));
-			pExpTerm[indexExpTerm] = (Ipp32f) exp(pRadXY[indexRadXY] / (-2*std2));
+			pRadXY[indexRadXY + i] = (Ipp32f) ( x_quad + (i - halfSize) * (i - halfSize));
+			pExpTerm[indexExpTerm + i] = (Ipp32f) exp(pRadXY[indexRadXY + i] / (-2*std2));
 			//Store summation of the exponential result to normalize it
-			sumExpTerm += pExpTerm[indexExpTerm];
+			sumExpTerm += pExpTerm[indexExpTerm + i];
 		}
 	}
 
@@ -167,10 +170,10 @@ int NoAdaptiveUSM::generateLoGKernel(const int size,const float sigma, Ipp32f* p
         int indexBaseLaplTerm = j*(stepBytesLaplTerm/sizeof(Ipp32f));
         int indexBaseKernel = j*(size);
         
-        #pragma omp simd aligned(pKernel:64) private(j) linear(indexBaseKernel,indexBaseLaplTerm:1)
+        #pragma vector aligned
         for (int i = 0; i < size; ++i)
         {
-            pKernel[indexBaseKernel] = -pLaplTerm[indexBaseLaplTerm];
+            pKernel[indexBaseKernel + i] = -pLaplTerm[indexBaseLaplTerm + i];
         }
     }
 
