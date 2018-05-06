@@ -53,7 +53,7 @@ Mat ParallelDNLM::processImage(const Mat& inputImage){
     int wSize_n=7;
     float kernelStd = 0.001f;
     int kernelLen = 17;
-    float sigma_r = 13.0f; //13
+    float sigma_r = 25.0f; //13
     float lambda = 3.0f;
     //Compute number of threads
     this->threads = omp_get_max_threads();
@@ -113,7 +113,7 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     //Convert input image to 32f format
     ippiConvert_8u32f_C1R(pSrcImage, srcImage.step[0], pSrc32fImage, stepBytesSrc, imageROISize);
     //Normalize converted image
-    ippiMulC_32f_C1IR(normFactor, pSrc32fImage, stepBytesSrc, imageROISize);
+    //ippiMulC_32f_C1IR(normFactor, pSrc32fImage, stepBytesSrc, imageROISize);
 
     // Mirror border for full image filtering
     status = ippiCopyMirrorBorder_32f_C1R(pSrc32fImage, stepBytesSrc, imageROISize, pSrcwBorderImage, stepBytesSrcwBorder, imageROIwBorderSize, imageTopLeftOffset, imageTopLeftOffset);
@@ -122,8 +122,8 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     //Applying USM Filter
     this->noAdaptiveUSM.noAdaptiveUSM(pSrcwBorderImage, stepBytesSrcwBorder, pUSMImage, stepBytesUSM, imageROIwBorderSize, kernelStd, lambda, kernelLen);
     //Gossens version doesnt works with normalized images
-    ippiMulC_32f_C1IR(scaleFactor, pSrcwBorderImage, stepBytesSrcwBorder, imageROIwBorderSize);
-    ippiMulC_32f_C1IR(scaleFactor, pUSMImage, stepBytesUSM, imageROIwBorderSize);
+    //ippiMulC_32f_C1IR(scaleFactor, pSrcwBorderImage, stepBytesSrcwBorder, imageROIwBorderSize);
+    //ippiMulC_32f_C1IR(scaleFactor, pUSMImage, stepBytesUSM, imageROIwBorderSize);
     //Aplying DNLM filter
     this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pUSMImage, stepBytesUSM, pFilteredImage, stepBytesFiltered, imageROIwBorderSize, wSize, wSize_n, sigma_r);
     //Measure slapsed time
