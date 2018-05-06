@@ -67,7 +67,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
 
 
         //For each distance between window patches
-        #pragma omp for collapse(2)
+        #pragma omp for collapse(2) schedule(runtime)
         for (int dn = 0; dn < wHalfLen+1; ++dn)
         {   
             //#pragma omp parallel for shared(pWeightsAcumm,pDst) private(dn,pBuffer,pEuclDist,pSumSqrDiff,pTmp)
