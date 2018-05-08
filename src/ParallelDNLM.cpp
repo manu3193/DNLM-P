@@ -31,6 +31,12 @@ int main(int argc, char* argv[]){
         cout << "Could not read image from file." << endl;
         return -1;
     }
+
+    //Init IPP library
+    IppStatus status = ippStsNoErr;
+    status = ippInit();
+    if(status != ippStsNoErr)
+        cerr <<"Processor not identified"<<endl;
     //Process image   
     outputImage = parallelDNLM.processImage(inputImage);
 
