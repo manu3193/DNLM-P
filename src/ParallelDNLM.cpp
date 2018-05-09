@@ -52,7 +52,7 @@ Mat ParallelDNLM::processImage(const Mat& inputImage){
     int wRSize = 21;
     int wSize_n=7;
     float kernelStd = 0.001f;
-    int kernelLen = 21;
+    int kernelLen = 17;
     float sigma_r = 0.5f; //13
     float lambda = 3.0f;
     
