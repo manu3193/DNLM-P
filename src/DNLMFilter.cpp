@@ -48,13 +48,18 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
         //Variable definition
         Ipp32f *pWindowIJCorr __attribute__((aligned(64)));
         Ipp32f *pEuclDist __attribute__((aligned(64)));
+        Ipp32f *pChunkMem __attribute__((aligned(64)));
         int stepBytesWindowIJCorr = 0, stepBytesEuclDist = 0;
         Ipp8u *pBuffer __attribute__((aligned(64)));
         //Variable to store summation result of filter response dor normalization
         Ipp64f sumExpTerm = 0, filterResult = 0;
         //Allocate memory for correlation result and buffer
-        pWindowIJCorr = ippiMalloc_32f_C1(windowSize.width, windowSize.height, &stepBytesWindowIJCorr);
-        pEuclDist = ippiMalloc_32f_C1(windowSize.width, windowSize.height, &stepBytesEuclDist);
+        pChunkMem = ippiMalloc_32f_C1(windowSize.width, 2*windowSize.height, &stepBytesEuclDist);
+        //Pointer arithmetic
+        pEuclDist = pChunkMem;
+        pWindowIJCorr = &pChunkMem[windowSize.height * stepBytesEuclDist/sizeof(Ipp32f)];
+        stepBytesWindowIJCorr = stepBytesEuclDist;
+        //Allocate working buffer
         pBuffer = ippsMalloc_8u( bufSize );
 
         #pragma omp for collapse(2)
@@ -111,12 +116,13 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                 ippiMul_32f_C1IR(pUSMWindowStart, stepBytesUSM, pEuclDist, stepBytesEuclDist, windowSize);
                 ippiSum_32f_C1R(pEuclDist, stepBytesEuclDist, windowSize, &filterResult, ippAlgHintNone);
 
-                pDst[indexPdstBase+i] = (Ipp32f) (filterResult/ sumExpTerm);
-
+                #pragma omp critical
+                {
+                    pDst[indexPdstBase+i] = (Ipp32f) (filterResult/ sumExpTerm);
+                }
             }
         }
-        ippiFree(pWindowIJCorr);
-        ippiFree(pEuclDist);
+        ippiFree(pChunkMem);
         ippsFree(pBuffer);
     }
 
