@@ -112,6 +112,8 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                     pTmp = &pChunkMem2[2 * euclROISize.height * stepBytesEuclDist/sizeof(Ipp32f)];
                     pTmp2 = &pChunkMem2[3 * euclROISize.height * stepBytesEuclDist/sizeof(Ipp32f)];
                     stepSumSqrDiff = stepBytesTmp = stepBytesEuclDist;
+                    //The ippiFilterBorder function operates as a inplace function, thus it is necessary to initialize
+                    ippiSet_32f_C1R((Ipp32f) 0.0f, pEuclDist, stepBytesEuclDist, euclROISize);
                      
                     //Compute squared diference 
                     ippiSub_32f_C1R((Ipp32f*) (pSrcBorder +indexSrcImageBaseWOffset + (m_min + dm)), stepBytesSrcBorder, 
