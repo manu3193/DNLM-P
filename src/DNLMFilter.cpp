@@ -57,6 +57,9 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
         Ipp32f *pEuclDist __attribute__((aligned(64)));
         Ipp32f *pSumSqrDiff __attribute__((aligned(64)));
         Ipp32f *pTmp __attribute__((aligned(64)));
+        Ipp32f *pTmp2 __attribute__((aligned(64)));
+        Ipp32f *pThreadWeightsAcumm __attribute__((aligned(64)));
+        Ipp32f *pThreadDst __attribute__((aligned(64)));
         int stepSumSqrDiff = 0, stepBytesEuclDist = 0, stepBytesTmp= 0;
         IppiBorderType borderType = ippBorderConst;
         const Ipp32f borderValue = 0;
@@ -64,6 +67,8 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
         Ipp8u *pBuffer __attribute__((aligned(64)));;               
 
         pBuffer = ippsMalloc_8u( bufSize );
+        pThreadWeightsAcumm = ippiMalloc_32f_C1(imageSize.width, imageSize.height, &stepBytesWeightsAcumm);
+        pThreadDst = ippiMalloc_32f_C1(imageSize.width, imageSize.height, &stepBytesWeightsAcumm);
 
 
         //For each distance between window patches
@@ -96,6 +101,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                     //Allocate buffers memory
                     pSumSqrDiff = ippiMalloc_32f_C1(euclROISize.width, euclROISize.height, &stepSumSqrDiff);
                     pTmp = ippiMalloc_32f_C1(euclROISize.width, euclROISize.height, &stepBytesTmp);
+                    pTmp2 = ippiMalloc_32f_C1(euclROISize.width, euclROISize.height, &stepBytesTmp);
                     pEuclDist = ippiMalloc_32f_C1(euclROISize.width, euclROISize.height, &stepBytesEuclDist);
                     //Compute squared diference 
                     ippiSub_32f_C1R((Ipp32f*) (pSrcBorder +indexSrcImageBaseWOffset + (m_min + dm)), stepBytesSrcBorder, 
@@ -112,16 +118,15 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
 
                     //Performing filtering
                     ippiMul_32f_C1R(pEuclDist, stepBytesEuclDist, (Ipp32f*) (pUSMImage +indexUSMImageBaseWOffset + (m_min + dm)), stepBytesUSM, pTmp, stepBytesTmp, euclROISize);
+                    //Exploiting weights symmetry
+                    ippiMul_32f_C1R(pEuclDist, stepBytesEuclDist, (Ipp32f*) (pUSMImage + indexUSMImageBase + m_min), stepBytesUSM, pTmp2, stepBytesTmp, euclROISize);
                       
                     //Accumulate signal and weights
-                    ippiAdd_32f_C1IR(pTmp, stepBytesTmp, (Ipp32f*) (pDst + indexDstBase + m_min), stepBytesDst, euclROISize);
-                    ippiAdd_32f_C1IR(pEuclDist, stepBytesEuclDist, (Ipp32f*) (pWeightsAcumm + indexWeightsAcummBase + m_min), stepBytesWeightsAcumm, euclROISize);
-                    
-                    //Exploiting weights symmetry
-                    ippiMul_32f_C1R(pEuclDist, stepBytesEuclDist, (Ipp32f*) (pUSMImage + indexUSMImageBase + m_min), stepBytesUSM, pTmp, stepBytesTmp, euclROISize);
+                    ippiAdd_32f_C1IR(pTmp, stepBytesTmp, (Ipp32f*) (pThreadDst + indexDstBase + m_min), stepBytesDst, euclROISize);
+                    ippiAdd_32f_C1IR(pEuclDist, stepBytesEuclDist, (Ipp32f*) (pThreadWeightsAcumm + indexWeightsAcummBase + m_min), stepBytesWeightsAcumm, euclROISize);
                     //Accumulate signal and weights 
-                    ippiAdd_32f_C1IR(pTmp, stepBytesTmp, (Ipp32f*) (pDst + indexDstBaseWOffset + (m_min + dm)), stepBytesDst, euclROISize);
-                    ippiAdd_32f_C1IR(pEuclDist, stepBytesEuclDist, &pWeightsAcumm[indexWeightsAcummBaseWOffset + (m_min + dm)], stepBytesWeightsAcumm, euclROISize);
+                    ippiAdd_32f_C1IR(pTmp2, stepBytesTmp, (Ipp32f*) (pThreadDst + indexDstBaseWOffset + (m_min + dm)), stepBytesDst, euclROISize);
+                    ippiAdd_32f_C1IR(pEuclDist, stepBytesEuclDist, &pThreadWeightsAcumm[indexWeightsAcummBaseWOffset + (m_min + dm)], stepBytesWeightsAcumm, euclROISize);
 
                     ippiFree(pSumSqrDiff);
                     ippiFree(pEuclDist);
@@ -131,12 +136,22 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                 else if (dn==0 && dm==0)
                 {   
                     //Acummulate weights and filter result
-                    ippiAddC_32f_C1IR((Ipp32f) 1.0f, pWeightsAcumm, stepBytesWeightsAcumm, imageSize );
-                    ippiAdd_32f_C1IR(pUSMImage, stepBytesUSM, pDst, stepBytesDst, imageSize);
+                    ippiAddC_32f_C1IR((Ipp32f) 1.0f, pThreadWeightsAcumm, stepBytesWeightsAcumm, imageSize );
+                    ippiAdd_32f_C1IR(pUSMImage, stepBytesUSM, pThreadDst, stepBytesDst, imageSize);
                 }
             }
         }        
+        #pragma omp critical
+        {
+            ippiAdd_32f_C1IR(pThreadWeightsAcumm, stepBytesWeightsAcumm, pWeightsAcumm, stepBytesWeightsAcumm, imageSize);
+            ippiAdd_32f_C1IR(pThreadDst, stepBytesDst, pDst, stepBytesDst, imageSize);
+        }
+
+        //Free resources
+        ippiFree(pThreadWeightsAcumm);
+        ippiFree(pThreadDst);
         ippsFree(pBuffer);
+
     }
 
     
