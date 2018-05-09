@@ -71,7 +71,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
         pBuffer = ippsMalloc_8u( bufSize );
         //Allocate one big chunk of memory to store thread's private weights and dst buffers
         pChunkMem = ippiMalloc_32f_C1(imageSize.width, 2*imageSize.height, &stepBytesThreadWeights);
-	    //Init buffer to 0
+	//Init buffer to 0
         ippiSet_32f_C1R((Ipp32f) 0.0f, pChunkMem, stepBytesThreadWeights, {imageSize.width, 2*imageSize.height});
         //Perform pointer arithmetics
         pThreadWeightsAcumm = pChunkMem;
@@ -80,9 +80,10 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
 
 
         //For each distance between window patches
-        #pragma omp for private(pEuclDist,pSumSqrDiff,pTmp,pTmp2,pThreadWeightsAcumm,pThreadDst) //collapse(2) schedule(runtime)
+        #pragma omp for collapse(2) schedule(runtime)
         for (int dn = 0; dn < wHalfLen+1; ++dn)
         {   
+            //#pragma omp parallel for shared(pWeightsAcumm,pDst) private(dn,pBuffer,pEuclDist,pSumSqrDiff,pTmp)
             for (int dm = 0; dm < wHalfLen+1; ++dm)
             {
                 //Exploit symmetry
