@@ -81,11 +81,10 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                 ippiMul_32f_C1IR(pUSMWindowStart, stepBytesUSM, pEuclDist, stepBytesEuclDist, windowSize);
                 ippiSum_32f_C1R(pEuclDist, stepBytesEuclDist, windowSize, &filterResult, ippAlgHintNone);
 
-                pDst[indexPdstBase+i] = (Ipp32f) (filterResult/ sumExpTerm);
-
-                //Need to do better error handling 
-                //if(status!=ippStsNoErr) cout << "Error " << status << endl;
-
+                #pragma omp critical
+                {
+                    pDst[indexPdstBase+i] = (Ipp32f) (filterResult/ sumExpTerm);
+                }
             }
         }
         ippiFree(pEuclDist);
