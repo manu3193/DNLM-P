@@ -52,7 +52,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
     //Get buffer size for moving average filter
     ippiFilterBoxBorderGetBufferSize(convROISize, nROISize, ipp32f, 1, &bufSize);
 
-    #pragma omp parallel shared(pWeightsAcumm,pDst) //private(dn,dm,pBuffer,pEuclDist,pSumSqrDiff,pTmp)
+    #pragma omp parallel shared(pWeightsAcumm,pDst,pUSMImage,pSrcBorder) //private(dn,dm,pBuffer,pEuclDist,pSumSqrDiff,pTmp)
     {
         Ipp32f *pEuclDist __attribute__((aligned(64)));
         Ipp32f *pSumSqrDiff __attribute__((aligned(64)));
