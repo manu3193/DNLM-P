@@ -60,15 +60,21 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
         Ipp32f *pTmp2 __attribute__((aligned(64)));
         Ipp32f *pThreadWeightsAcumm __attribute__((aligned(64)));
         Ipp32f *pThreadDst __attribute__((aligned(64)));
-        int stepSumSqrDiff = 0, stepBytesEuclDist = 0, stepBytesTmp= 0;
+        Ipp32f *pChunkMem __attribute__((aligned(64)));
+        Ipp32f *pChunkMem2 __attribute__((aligned(64)));
+        int stepSumSqrDiff = 0, stepBytesEuclDist = 0, stepBytesTmp= 0, stepBytesThreadWeights = 0, stepBytesThreadDst = 0;
         IppiBorderType borderType = ippBorderConst;
         const Ipp32f borderValue = 0;
         //Pointer to work buffer and buffer size for the BoxFilter
         Ipp8u *pBuffer __attribute__((aligned(64)));;               
 
         pBuffer = ippsMalloc_8u( bufSize );
-        pThreadWeightsAcumm = ippiMalloc_32f_C1(imageSize.width, imageSize.height, &stepBytesWeightsAcumm);
-        pThreadDst = ippiMalloc_32f_C1(imageSize.width, imageSize.height, &stepBytesWeightsAcumm);
+        //Allocate one big chunk of memory to store thread's private weights and dst buffers
+        pChunkMem = ippiMalloc_32f_C1(imageSize.width, 2*imageSize.height, &stepBytesThreadWeights);
+        //Perform pointer arithmetics
+        pThreadWeightsAcumm = pChunkMem;
+        pThreadDst = (Ipp32f*) &pChunkMem[imageSize.height * stepBytesThreadWeights/sizeof(Ipp32f)];
+        stepBytesThreadDst = stepBytesThreadWeights;
 
 
         //For each distance between window patches
@@ -87,8 +93,8 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                     //Compute array base index
                     const int indexSrcImageBase = n_min*(stepBytesSrcBorder/sizeof(Ipp32f));
                     const int indexSrcImageBaseWOffset = (n_min + dn)*(stepBytesSrcBorder/sizeof(Ipp32f));
-                    const int indexWeightsAcummBase= n_min*(stepBytesWeightsAcumm/sizeof(Ipp32f));
-                    const int indexWeightsAcummBaseWOffset= (n_min + dn)*(stepBytesWeightsAcumm/sizeof(Ipp32f));
+                    const int indexWeightsAcummBase= n_min*(stepBytesThreadWeights/sizeof(Ipp32f));
+                    const int indexWeightsAcummBaseWOffset= (n_min + dn)*(stepBytesThreadWeights/sizeof(Ipp32f));
                     const int indexUSMImageBase = n_min*(stepBytesUSM/sizeof(Ipp32f));
                     const int indexUSMImageBaseWOffset = (n_min + dn)*(stepBytesUSM/sizeof(Ipp32f));
                     const int indexDstBase= n_min*(stepBytesDst/sizeof(Ipp32f));
@@ -99,10 +105,13 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                     //Compute ROI
                     const IppiSize euclROISize = {m_max-m_min+1,n_max-n_min+1};
                     //Allocate buffers memory
-                    pSumSqrDiff = ippiMalloc_32f_C1(euclROISize.width, euclROISize.height, &stepSumSqrDiff);
-                    pTmp = ippiMalloc_32f_C1(euclROISize.width, euclROISize.height, &stepBytesTmp);
-                    pTmp2 = ippiMalloc_32f_C1(euclROISize.width, euclROISize.height, &stepBytesTmp);
-                    pEuclDist = ippiMalloc_32f_C1(euclROISize.width, euclROISize.height, &stepBytesEuclDist);
+                    pChunkMem2 = ippiMalloc_32f_C1(euclROISize.width, 4*euclROISize.height, &stepBytesEuclDist);
+                    pEuclDist = pChunkMem2;
+                    pSumSqrDiff = &pChunkMem2[euclROISize.height * stepBytesEuclDist/sizeof(Ipp32f)];
+                    pTmp = &pChunkMem2[2 * euclROISize.height * stepBytesEuclDist/sizeof(Ipp32f)];
+                    pTmp2 = &pChunkMem2[3 * euclROISize.height * stepBytesEuclDist/sizeof(Ipp32f)];
+                    stepSumSqrDiff = stepBytesTmp = stepBytesEuclDist;
+                     
                     //Compute squared diference 
                     ippiSub_32f_C1R((Ipp32f*) (pSrcBorder +indexSrcImageBaseWOffset + (m_min + dm)), stepBytesSrcBorder, 
                         (Ipp32f*) (pSrcBorder + indexSrcImageBase + m_min), stepBytesSrcBorder, pSumSqrDiff, stepSumSqrDiff, euclROISize);
@@ -122,34 +131,31 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                     ippiMul_32f_C1R(pEuclDist, stepBytesEuclDist, (Ipp32f*) (pUSMImage + indexUSMImageBase + m_min), stepBytesUSM, pTmp2, stepBytesTmp, euclROISize);
                       
                     //Accumulate signal and weights
-                    ippiAdd_32f_C1IR(pTmp, stepBytesTmp, (Ipp32f*) (pThreadDst + indexDstBase + m_min), stepBytesDst, euclROISize);
-                    ippiAdd_32f_C1IR(pEuclDist, stepBytesEuclDist, (Ipp32f*) (pThreadWeightsAcumm + indexWeightsAcummBase + m_min), stepBytesWeightsAcumm, euclROISize);
+                    ippiAdd_32f_C1IR(pTmp, stepBytesTmp, (Ipp32f*) (pThreadDst + indexDstBase + m_min), stepBytesThreadDst, euclROISize);
+                    ippiAdd_32f_C1IR(pEuclDist, stepBytesEuclDist, (Ipp32f*) (pThreadWeightsAcumm + indexWeightsAcummBase + m_min), stepBytesThreadWeights, euclROISize);
                     //Accumulate signal and weights 
-                    ippiAdd_32f_C1IR(pTmp2, stepBytesTmp, (Ipp32f*) (pThreadDst + indexDstBaseWOffset + (m_min + dm)), stepBytesDst, euclROISize);
-                    ippiAdd_32f_C1IR(pEuclDist, stepBytesEuclDist, &pThreadWeightsAcumm[indexWeightsAcummBaseWOffset + (m_min + dm)], stepBytesWeightsAcumm, euclROISize);
+                    ippiAdd_32f_C1IR(pTmp2, stepBytesTmp, (Ipp32f*) (pThreadDst + indexDstBaseWOffset + (m_min + dm)), stepBytesThreadDst, euclROISize);
+                    ippiAdd_32f_C1IR(pEuclDist, stepBytesEuclDist, &pThreadWeightsAcumm[indexWeightsAcummBaseWOffset + (m_min + dm)], stepBytesThreadWeights, euclROISize);
 
-                    ippiFree(pSumSqrDiff);
-                    ippiFree(pEuclDist);
-                    ippiFree(pTmp);
+                    ippiFree(pChunkMem2);
                 }
 
                 else if (dn==0 && dm==0)
                 {   
                     //Acummulate weights and filter result
-                    ippiAddC_32f_C1IR((Ipp32f) 1.0f, pThreadWeightsAcumm, stepBytesWeightsAcumm, imageSize );
-                    ippiAdd_32f_C1IR(pUSMImage, stepBytesUSM, pThreadDst, stepBytesDst, imageSize);
+                    ippiAddC_32f_C1IR((Ipp32f) 1.0f, pThreadWeightsAcumm, stepBytesThreadWeights, imageSize );
+                    ippiAdd_32f_C1IR(pUSMImage, stepBytesUSM, pThreadDst, stepBytesThreadDst, imageSize);
                 }
             }
         }        
         #pragma omp critical
         {
-            ippiAdd_32f_C1IR(pThreadWeightsAcumm, stepBytesWeightsAcumm, pWeightsAcumm, stepBytesWeightsAcumm, imageSize);
-            ippiAdd_32f_C1IR(pThreadDst, stepBytesDst, pDst, stepBytesDst, imageSize);
+            ippiAdd_32f_C1IR(pThreadWeightsAcumm, stepBytesThreadWeights, pWeightsAcumm, stepBytesWeightsAcumm, imageSize);
+            ippiAdd_32f_C1IR(pThreadDst, stepBytesThreadDst, pDst, stepBytesDst, imageSize);
         }
 
         //Free resources
-        ippiFree(pThreadWeightsAcumm);
-        ippiFree(pThreadDst);
+        ippiFree(pChunkMem);
         ippsFree(pBuffer);
 
     }
