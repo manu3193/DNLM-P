@@ -23,9 +23,6 @@ int DNLMFilter::dnlmFilter(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, int
     return status;
 }
 
-void DNLMFilter::setNumberThreads(int num){
-    this->threads=num;
-}
 
 
 //Implements dnlm filter for grayscale images.
