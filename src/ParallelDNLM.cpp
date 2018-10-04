@@ -47,7 +47,7 @@ int main(int argc, char* argv[]){
     regex floatRegex = regex("[+]?([0-9]*[.])?[0-9]+");
 
     if (argc == 2){
-        cout << "Using default parameters W=21x21, W=7x7, sigma_r=10, lambda=1, USM_len=16,USM_std=3" << endl;
+        cout << "Using default parameters W=21x21, W_n=7x7, sigma_r=10, lambda=1, USM_len=16,USM_std=3" << endl;
         parallelDNLM = new ParallelDNLM();
     } 
     //Check input arguments

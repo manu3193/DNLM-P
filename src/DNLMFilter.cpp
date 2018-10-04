@@ -123,7 +123,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                     ippiSqrt_32f_C1IR(pEuclDist, stepBytesEuclDist, euclROISize);
                     
                     //Compute weights
-                    ippiDivC_32f_C1IR((Ipp32f) -(sigma_r * sigma_r), pEuclDist, stepBytesEuclDist, euclROISize);
+                    ippiDivC_32f_C1IR((Ipp32f) -(2*sigma_r * sigma_r), pEuclDist, stepBytesEuclDist, euclROISize);
                     ippiExp_32f_C1IR(pEuclDist, stepBytesEuclDist, euclROISize);          
 
                     //Performing filtering
