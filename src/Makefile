@@ -7,7 +7,7 @@ IPP_LIBS_PATH = $(IPPROOT)/lib/intel64
 # define the C compiler to use
 CC = icpc
 # define any compile-time flags
-CFLAGS_KNL = -g -std=c++11 -qopenmp -O3 -xMIC-AVX512  -fma -align -finline-functions 
+CFLAGS_KNL = -g  -qopenmp -O3 -xMIC-AVX512  -fma -align -finline-functions 
 CFLAGS_DEBUG = -g -std=c++11 -qopenmp -O3  -fma -align -finline-functions 
 CFLAGS_KNL_DEBUG = -g -std=c++11 -qopenmp -O3 -xMIC-AVX512  -fma -align -finline-functions 
 CFLAGS = -g -std=c++11 -qopenmp -O3  -axMIC-AVX512 -fma -align -finline-functions 
