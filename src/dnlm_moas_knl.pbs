@@ -1,0 +1,33 @@
+#PBS -N dnlm_moas_knl
+#PBS -q phi-n1h72
+#PBS -l nodes=1
+#PBS -l walltime=00:15:00
+
+cd $PBS_O_WORKDIR
+
+#Set number of threads
+OMP_SET_NUM_THREADS=32
+
+#Load required modules
+module load opencv/3
+module load gcc/6.4.0
+
+#Load ipp vars
+source /opt/intel/compilers_and_libraries/linux/ipp/bin/ippvars.sh intel64
+#Load compiler vars
+source /opt/intel/bin/compilervars.sh intel64
+
+#Filter parameters
+IMAGE_DIR=/home/scalderon/DNLM-P/*.png
+W=21
+W_N=7
+SIGMA=10
+LAMBDA=1
+KERNEL_LEN=16
+KERNEL_STD=3
+
+
+for f in $IMAGE_DIR ; do
+  ./dnlm_moas_knl $f $W $W_N $SIGMA $LAMBDA $KERNEL_LEN $KERNEL_STD
+done;
+
