@@ -9,7 +9,6 @@
 #include <DNLMFilter.hpp>
 #include <NoAdaptiveUSM.hpp>
 #include <ippcore.h>
-#include <timer.h>
 #include <omp.h>
 
 using namespace cv;
