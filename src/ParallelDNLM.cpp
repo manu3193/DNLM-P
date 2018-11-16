@@ -119,12 +119,16 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
 
     //Pointers to IPP type images 
     Ipp32f *pSrc32fImage = NULL, *pSrcwBorderImage = NULL, *pUSMImage = NULL, *pFilteredImage= NULL;
-
+    //Pointers to NPP type images
+    Npp32f *pSrcwBorderImageGpu = NULL, *pUSMImageGpu = NULL, *pFilteredImageGpu = NULL;
     //Variable to store image step size in bytes 
     int stepBytesSrc = 0;
     int stepBytesSrcwBorder = 0;
     int stepBytesUSM = 0;
     int stepBytesFiltered = 0;
+    int stepBytesSrcwBorderGpu = 0;
+    int stepBytesUSMGpu = 0;
+    int stepBytesFilteredGpu = 0;
 
     //Scale factors to normalize and denormalize 32f image
     Ipp32f normFactor = 1.0/255.0; 
@@ -147,14 +151,18 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
 
     imageROIwBorderSize = {imageROISize.width + 2*imageTopLeftOffset, imageROISize.height + 2*imageTopLeftOffset};     
     
-    //Allocate memory for images
+    //Allocate memory for cpu images
     pSrc32fImage = ippiMalloc_32f_C1(imageROISize.width, imageROISize.height, &stepBytesSrc); 
     pSrcwBorderImage = ippiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesSrcwBorder);
     pUSMImage = ippiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesUSM);
     pFilteredImage = ippiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesFiltered);   
+    //Allocate memory for gpu images
+    pSrcwBorderImageGpu = nppiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesSrcwBorderGpu);
+    pUSMImageGpu = nppiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesUSMGpu);
+    pFilteredImageGpu = nppiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesFilteredGpu);
 
-    //Set result image to 0
-    ippiSet_32f_C1R((Ipp32f) 0.0f, pFilteredImage, stepBytesFiltered, imageROIwBorderSize);
+    //Set result gpu image to 0
+    nppiSet_32f_C1R((Npp32f) 0.0f, pFilteredImageGpu, stepBytesFilteredGpu, {imageROIwBorderSize.width, imageROIwBorderSize.height});
     
     //Convert input image to 32f format
     ippiConvert_8u32f_C1R(pSrcImage, srcImage.step[0], pSrc32fImage, stepBytesSrc, imageROISize);
@@ -170,10 +178,18 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     //Gossens version doesnt works with normalized images
     //ippiMulC_32f_C1IR(scaleFactor, pSrcwBorderImage, stepBytesSrcwBorder, imageROIwBorderSize);
     //ippiMulC_32f_C1IR(scaleFactor, pUSMImage, stepBytesUSM, imageROIwBorderSize);
+    //Copy images to GPU
+    cudaMemcpy2D((void *) pSrcwBorderImageGpu, stepBytesSrcwBorderGpu, (void *) pSrcwBorderImage, stepBytesSrcwBorder, 
+                 imageROIwBorderSize.width, imageROIwBorderSize.height, cudaMemcpyHostToDevice);
+    cudaMemcpy2D((void *) pUSMImageGpu, stepBytesUSM, (void *) pUSMImage, stepBytesUSM, 
+                 imageROIwBorderSize.width, imageROIwBorderSize.height, cudaMemcpyHostToDevice);
     //Aplying DNLM filter
-    this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pUSMImage, stepBytesUSM, pFilteredImage, stepBytesFiltered, imageROIwBorderSize, wSize, wSize_n, sigma_r);
+    this->dnlmFilter.dnlmFilter(pSrcwBorderImageGpu, stepBytesSrcwBorderGpu, CV_32FC1, pUSMImageGpu, stepBytesUSM, pFilteredImageGpu, stepBytesFilteredGpu,  {imageROIwBorderSize.width, imageROIwBorderSize.height}, wSize, wSize_n, sigma_r);
     //Measure slapsed time
     double elapsed = omp_get_wtime() - start;
+    cudaMemcpy2D((void *) pFilteredImage, stepBytesFiltered, (void *) pFilteredImageGpu, stepBytesFilteredGpu,
+                 imageROIwBorderSize.width, imageROIwBorderSize.height, cudaMemcpyDeviceToHost);
+    cudaDeviceSynchronize();
     //Convert back to uchar, add offset to pointer to remove border
     ippiConvert_32f8u_C1R((Ipp32f*) (pFilteredImage + imageTopLeftOffset*stepBytesFiltered/sizeof(Ipp32f)+imageTopLeftOffset), stepBytesFiltered, pDstImage , outputImage.step[0], imageROISize, ippRndFinancial);
     //ippiConvert_32f8u_C1R(pUSMImage, stepBytesUSM, pDstImage , outputImage.step[0], imageROISize, ippRndFinancial);
@@ -184,7 +200,7 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     ippiFree(pUSMImage);
     ippiFree(pFilteredImage);
 
-    cout <<"Elapsed time: "<< time << " s"<< endl;
+    cout <<"Elapsed time: "<< elapsed << " s"<< endl;
 
     return outputImage;
 }
