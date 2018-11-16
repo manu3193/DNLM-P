@@ -10,6 +10,7 @@
 #include <NoAdaptiveUSM.hpp>
 #include <ippcore.h>
 #include <omp.h>
+#include <cuda_runtime.h>
 
 using namespace cv;
 using namespace std;
