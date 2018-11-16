@@ -4,6 +4,8 @@
 #
 
 IPP_LIBS_PATH = $(IPPROOT)/lib/intel64
+#CUDA_HOME = /opt/tools/cuda-9.0.176
+CUDA_HOME = /opt/tools/cuda-8.0
 # define the C compiler to use
 CC = icpc
 # define any compile-time flags
@@ -12,13 +14,13 @@ CFLAGS_DEBUG = -g -std=c++11 -qopenmp -O3  -fma -align -finline-functions
 CFLAGS_KNL_DEBUG = -g -std=c++11 -qopenmp -O3 -xMIC-AVX512  -fma -align -finline-functions 
 CFLAGS = -g  -qopenmp -O3  -axMIC-AVX512 -fma -align -finline-functions 
 
-LIBS = -lippi -lippcv -lippcc -lipps -lippvm  -lippcore  -lopencv_core -lopencv_highgui -lopencv_imgcodecs
+LIBS = -lippi -lippcv -lippcc -lipps -lippvm  -lippcore -lnppc -lnppial -lnppitc -lnppidei -lnppif -lnppisu  -lcudart -lopencv_core -lopencv_highgui -lopencv_imgcodecs
 
-LDFLAGS =-g3 -Wall -L$(IPP_LIBS_PATH) -L/opt/tools/opencv-3/lib
+LDFLAGS =-g3 -Wall -L$(IPP_LIBS_PATH) -L$(CUDA_HOME)/lib64 -L/opt/tools/opencv-3/lib
 LDFLAGS_DEBUG =-g3 -Wall -L$IPP_LIBS_PATH -qopt-report=5  -qopt-report-phase=loop,vec,cg -qopt-report-embed
 # define any directories containing header files other than /usr/include
 #
-INCLUDES= -I../include -I$(IPPROOT)/include -I/opt/tools/opencv-3/include 
+INCLUDES= -I../include -I$(IPPROOT)/include -I$(CUDA_HOME)/include -I/opt/tools/opencv-3/include 
 
 
 # define the C source files
