@@ -12,7 +12,7 @@ CC = icpc
 CFLAGS_KNL = -g  -qopenmp -O3 -xMIC-AVX512  -fma -align -finline-functions 
 CFLAGS_DEBUG = -g -std=c++11 -qopenmp -O3  -fma -align -finline-functions 
 CFLAGS_KNL_DEBUG = -g -std=c++11 -qopenmp -O3 -xMIC-AVX512  -fma -align -finline-functions 
-CFLAGS = -g  -qopenmp -O3  -axMIC-AVX512 -fma -align -finline-functions 
+CFLAGS = -g  -qopenmp -O3  -xCORE-AVX2 -fma -align -finline-functions 
 
 LIBS = -lippi -lippcv -lippcc -lipps -lippvm  -lippcore -lnppc -lnppial -lnppitc -lnppidei -lnppif -lnppisu  -lcudart -lopencv_core -lopencv_highgui -lopencv_imgcodecs
 
