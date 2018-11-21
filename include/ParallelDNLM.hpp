@@ -7,7 +7,7 @@
 #include <regex>
 #include <ippcv.h>
 #include <DNLMFilter.hpp>
-#include <NoAdaptiveUSM.hpp>
+//#include <NoAdaptiveUSM.hpp>
 #include <ippcore.h>
 #include <omp.h>
 #include <cuda_runtime.h>
@@ -53,7 +53,7 @@ public:
 private:
 
 	DNLMFilter dnlmFilter;
-	NoAdaptiveUSM noAdaptiveUSM;
+//	NoAdaptiveUSM noAdaptiveUSM;
 
 	int wSize;
     int wSize_n;
