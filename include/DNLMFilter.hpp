@@ -5,8 +5,6 @@
 #include <cstdio>
 #include <algorithm>
 #include <opencv2/opencv.hpp>
-#include <ipp.h>
-#include <ippcv.h>
 #include <npp.h>
 #include <nppi.h>
 #include <cuda_runtime.h>

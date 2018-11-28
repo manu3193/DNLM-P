@@ -3,28 +3,25 @@
 # 'make clean'  removes all .o and executable files
 #
 
-IPP_LIBS_PATH = $(IPPROOT)/lib/intel64
-#CUDA_HOME = /opt/tools/cuda-9.0.176
-CUDA_HOME = /opt/tools/cuda-8.0
+CUDA_HOME = /opt/tools/cuda-9.0.176
+#CUDA_HOME = /opt/tools/cuda-8.0
 # define the C compiler to use
-CC = icpc
+CC = nvcc 
 # define any compile-time flags
-CFLAGS_KNL = -g  -qopenmp -O3 -xMIC-AVX512  -fma -align -finline-functions 
-CFLAGS_DEBUG = -g -std=c++11 -qopenmp -O3  -fma -align -finline-functions 
-CFLAGS_KNL_DEBUG = -g -std=c++11 -qopenmp -O3 -xMIC-AVX512  -fma -align -finline-functions 
-CFLAGS = -g  -qopenmp -O3  -xCORE-AVX2 -fma -align -finline-functions 
+CFLAGS_DEBUG = -g -O3 -cudart static -gencode arch=compute_35,code=sm_35 -use_fast_math
+CFLAGS = -O3 -cudart static -gencode arch=compute_35,code=sm_35 -use_fast_math
 
-LIBS = -lippi -lippcv -lippcc -lipps -lippvm  -lippcore -lnppc -lnppial -lnppitc -lnppidei -lnppif -lnppisu  -lcudart -lopencv_core -lopencv_highgui -lopencv_imgcodecs
-
-LDFLAGS =-g3 -Wall -L$(IPP_LIBS_PATH) -L$(CUDA_HOME)/lib64 -L/opt/tools/opencv-3/lib
-LDFLAGS_DEBUG =-g3 -Wall -L$IPP_LIBS_PATH -qopt-report=5  -qopt-report-phase=loop,vec,cg -qopt-report-embed
+LIBS = -lnppc_static -lnppial_static -lnppitc_static -lnppidei_static -lnppif_static -lnppisu_static -lnpps_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
+#LIBS = -lnppc_static -lnppi_static -lnpps_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
+LDFLAGS = -L$(CUDA_HOME)/lib64 -L/opt/tools/opencv-3/lib
+LDFLAGS_DEBUG = -L$(CUDA_HOME)/lib64 -L/opt/tools/opencv-3/lib
 # define any directories containing header files other than /usr/include
 #
-INCLUDES= -I../include -I$(IPPROOT)/include -I$(CUDA_HOME)/include -I/opt/tools/opencv-3/include 
+INCLUDES= -I../include -I$(CUDA_HOME)/include -I/opt/tools/opencv-3/include 
 
 
 # define the C source files
-SRCS =  NoAdaptiveUSM.cpp DNLMFilter.cpp ParallelDNLM.cpp
+SRCS =  DNLMFilter.cpp ParallelDNLM.cpp
 
 # define the C object files
 #
@@ -38,7 +35,6 @@ OBJS = $(SRCS:.c=.o)
 
 # define the executable file
 MAIN = dnlmfilter
-MAIN_KNL = dnlmfilter_knl
 
 #
 # The following part of the makefile is generic; it can be used to
@@ -52,14 +48,9 @@ MAIN_KNL = dnlmfilter_knl
 $(MAIN): $(OBJS) 
 	   $(CC) $(OBJS) $(CFLAGS) $(INCLUDES)  -o $@ $(LDFLAGS) $(LIBS)
 
-knl: $(OBJS) 
-	   $(CC) $(OBJS) $(CFLAGS_KNL) $(INCLUDES)  -o $(MAIN_KNL) $(LDFLAGS) $(LIBS)
-
 debug: $(OBJS) 
 	   $(CC) $(OBJS) $(CFLAGS_DEBUG) $(INCLUDES)  -o $(MAIN) $(LDFLAGS_DEBUG) $(LIBS)
 
-knl-debug: $(OBJS) 
-	   $(CC) $(OBJS) $(CFLAGS_KNL_DEBUG) $(INCLUDES)  -o $(MAIN_KNL) $(LDFLAGS_DEBUG) $(LIBS)
 
 
 # this is a suffix replacement rule for building .o's from .c's

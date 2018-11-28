@@ -5,10 +5,8 @@
 #include <string>
 #include <iostream>
 #include <regex>
-#include <ippcv.h>
 #include <DNLMFilter.hpp>
 //#include <NoAdaptiveUSM.hpp>
-#include <ippcore.h>
 #include <omp.h>
 #include <cuda_runtime.h>
 
