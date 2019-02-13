@@ -6,6 +6,7 @@
 #include <opencv2/opencv.hpp>
 #include <npp.h>
 #include <nppi.h>
+#include <npps.h>
 #include <cuda_runtime.h>
 
 using namespace cv;
