@@ -8,8 +8,8 @@ using namespace std;
  *  * @brief      Constructs the object with default parameters
  *   */
 ParallelDNLM::ParallelDNLM(){
-    this->wSize = 21;
-    this->wSize_n = 7;
+    this->wSize = 5;
+    this->wSize_n = 3;
     this->kernelStd = 3;
     this->kernelLen = 16;
     this->sigma_r = 10; 
@@ -60,7 +60,8 @@ int main(int argc, char* argv[]){
     }
     else { 
         parallelDNLM = new ParallelDNLM(stoi(string(argv[2])), stoi(string(argv[3])), stof(string(argv[4])), stof(string(argv[5])), stoi(string(argv[6])), stof(string(argv[7])));
-    }
+    } 
+
     //Open input image
     const string inputFile = argv[1];
     // Find extension point
@@ -82,6 +83,8 @@ int main(int argc, char* argv[]){
     //Release object memory
     inputImage.release();
     outputImage.release();
+
+    return 0;
                                                                                                                                                                                              return 0;
                                                                                                                                                                                           }
 
@@ -96,22 +99,39 @@ Mat ParallelDNLM::processImage(const Mat& inputImage){
 //Input image must be from 0 to 255
 Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float sigma_r, float lambda, int kernelLen, float kernelStd){
     
-    //Create CUDA events to meausre execution time
+    //Get cuda device properties
+    int device;
+    cudaError_t cudaStatus = cudaSuccess;
+    //Create CUDA events to measure execution time
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
     //Status variable helps to check for errors
     NppStatus status =  NPP_NO_ERROR;
     
-    //Pointers to NPP type images 
-    Npp32f *pSrcImage32f = NULL, *pSrcwBorderImage = NULL, *pUSMImage = NULL, *pFilteredImage32f = NULL;
-    Npp8u *pUSMBuffer = NULL, *pSrcImage8u = NULL, *pFilteredImage8u = NULL;
+    cudaStatus = cudaGetDevice(&device);
+    if (cudaStatus == cudaSuccess)
+    {
+        cudaDeviceProp prop;
+        cudaGetDeviceProperties(&prop, device);
+        cout <<"Device Number: " <<device <<endl;
+        cout <<"  Device name: " <<prop.name <<endl;
+        cout <<"  Memory Clock Rate (KHz): "<<prop.memoryClockRate<<endl;
+        cout <<"  Memory Bus Width (bits): "<<prop.memoryBusWidth<<endl;
+        cout <<"  Peak Memory Bandwidth (GB/s): "<<2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6 <<endl;
+        cout <<"  Compute Capability: "<<prop.major<<"."<<prop.minor<<endl;
 
+    }    
+    //Pointers to NPP type images 
+    //OLD Npp32f *pSrcImage32f = NULL, *pSrcwBorderImage = NULL, *pUSMImage = NULL, *pFilteredImage32f = NULL;
+    Npp32f *pSrcImage32f = NULL, *pSrcwBorderImage = NULL, *pFilteredImage32f = NULL;
+    //OLD Npp8u *pUSMBuffer = NULL, *pSrcImage8u = NULL, *pFilteredImage8u = NULL;
+    Npp8u *pSrcImage8u = NULL, *pFilteredImage8u = NULL;
     //Variable to store image step size in bytes 
     int stepBytesSrc32f = 0;
     int stepBytesSrc8u = 0;
     int stepBytesSrcwBorder = 0;
-    int stepBytesUSM = 0;
+    //OLD int stepBytesUSM = 0;
     int stepBytesFiltered32f = 0;
     int stepBytesFiltered8u = 0;
 
@@ -130,50 +150,62 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     //Compute border offset for border replicated image
     const int imageTopLeftOffset = floor(wSize_n/2);
     imageROIwBorderSize = {imageROISize.width + 2*imageTopLeftOffset, imageROISize.height + 2*imageTopLeftOffset};
-    //Variable to store USM buffer size
-    int usmBufferSize = 0;
-    //Compute USM radius
-    const Npp32f usmRadius = (kernelLen-1)/2;  
-    //Compute USM buffer size
-    status = nppiFilterUnsharpGetBufferSize_32f_C1R(usmRadius, kernelStd, &usmBufferSize);
+    //OLD Variable to store USM buffer size
+    //OLD int usmBufferSize = 0;
+    //OLD Compute USM radius
+    //OLD const Npp32f usmRadius = (kernelLen-1)/2;  
+    //OLD Compute USM buffer size
+    //OLD status = nppiFilterUnsharpGetBufferSize_32f_C1R(usmRadius, kernelStd, &usmBufferSize);
     //Allocate memory for gpu images
     pSrcImage8u = nppiMalloc_8u_C1(imageROISize.width, imageROISize.height, &stepBytesSrc8u);
     pSrcImage32f = nppiMalloc_32f_C1(imageROISize.width, imageROISize.height, &stepBytesSrc32f); 
     pSrcwBorderImage = nppiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesSrcwBorder);
-    pUSMImage =  nppiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesUSM);
-    pFilteredImage32f = nppiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesFiltered32f);   
-    pFilteredImage8u = nppiMalloc_8u_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesFiltered8u);
-    //Allocate memory for usm bufer
-    pUSMBuffer = nppsMalloc_8u(usmBufferSize);
-    //Set result gpu image to 0
-    nppiSet_32f_C1R((Npp32f) 0.0f, pFilteredImage32f, stepBytesFiltered32f, {imageROISize.width, imageROISize.height});
-    //Copy images to gpu
-    cudaMemcpy2D(pSrcImage8u, stepBytesSrc8u, &srcImage.data[0], srcImage.step[0], imageROISize.width, imageROISize.height, cudaMemcpyHostToDevice);    
+    //OLD pUSMImage =  nppiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesUSM);
+    pFilteredImage32f = nppiMalloc_32f_C1(imageROISize.width, imageROISize.height, &stepBytesFiltered32f);   
+    pFilteredImage8u = nppiMalloc_8u_C1(imageROISize.width, imageROISize.height, &stepBytesFiltered8u);
     
+    if (pSrcImage8u ==NULL) cout << "error alocating pSrcImage8u" << endl;
+    if (pSrcImage32f ==NULL) cout << "error alocating pSrcImage32f" << endl;
+    if (pSrcwBorderImage ==NULL) cout << "error alocating pSrcwBorderImage" << endl;
+    //OLD if (pUSMImage ==NULL) cout << "error alocating pUSMImage" << endl;
+    if (pFilteredImage32f ==NULL) cout << "error alocating pFilteredImage32f" << endl;
+    if (pFilteredImage8u ==NULL) cout << "error alocating pFilteredImage8u" << endl;
+    
+    //Allocate memory for usm bufer
+    //OLD pUSMBuffer = nppsMalloc_8u(usmBufferSize);
+    //Copy images to gpu
+    cudaStatus = cudaMemcpy2D(pSrcImage8u, stepBytesSrc8u, srcImage.data, srcImage.step[0], imageROISize.width, imageROISize.height, cudaMemcpyHostToDevice);
+    // OLD cudaStatus = cudaMemcpy2D((void*) pSrcImage8u, stepBytesSrc8u, (void*) srcImage.data, srcImage.step[0], imageROISize.width, imageROISize.height, cudaMemcpyHostToDevice);
+    if (cudaStatus !=cudaSuccess) cout << " error 2 " << cudaStatus  << " " << stepBytesSrc8u << " " << srcImage.step[0] << endl;
     //Convert input image to 32f format
-    nppiConvert_8u32f_C1R(pSrcImage8u, stepBytesSrc8u, pSrcImage32f, stepBytesSrc32f, imageROISize);
+    status = nppiConvert_8u32f_C1R(pSrcImage8u, stepBytesSrc8u, pSrcImage32f, stepBytesSrc32f, imageROISize);
+    if (status !=0) cout << " error 3 " << status << endl;
     //Normalize converted image
     //ippiMulC_32f_C1IR(normFactor, pSrc32fImage, stepBytesSrc, imageROISize);
 
     // Mirror border for full image filtering
     status = nppiCopyWrapBorder_32f_C1R(pSrcImage32f, stepBytesSrc32f, imageROISize, pSrcwBorderImage, stepBytesSrcwBorder, imageROIwBorderSize, imageTopLeftOffset, imageTopLeftOffset);
+    if (status !=0) cout << " error 4 " << status << endl;
     //timer start
     cudaEventRecord(start); 
-    //Applying USM Filter
-    status =nppiFilterUnsharpBorder_32f_C1R(pSrcwBorderImage, stepBytesSrcwBorder, {imageTopLeftOffset,imageTopLeftOffset}, pUSMImage, stepBytesUSM, {imageROIwBorderSize.width, imageROIwBorderSize.height}, usmRadius, kernelStd, lambda, 2, NPP_BORDER_REPLICATE, pUSMBuffer);
+    //OLD Applying USM Filter
+    //OLD status =nppiFilterUnsharpBorder_32f_C1R(pSrcwBorderImage, stepBytesSrcwBorder, {mageTopLeftOffset, imageTopLeftOffset}, pUSMImage, stepBytesUSM, imageROIwBorderSize, usmRadius, kernelStd, lambda, 2, NPP_BORDER_REPLICATE, pUSMBuffer);
+    //OLD if (status !=0) cout << " error 5 " << status << endl;
     //Unormalize
     //Here
     //Aplying DNLM filter
-    this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pUSMImage, stepBytesUSM, pFilteredImage32f, stepBytesFiltered32f,  {imageROIwBorderSize.width, imageROIwBorderSize.height}, wSize, wSize_n, sigma_r);
+    //OLD this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pUSMImage, stepBytesUSM, pFilteredImage32f, stepBytesFiltered32f,  imageROISize, wSize, wSize_n, sigma_r);
+    this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pFilteredImage32f, stepBytesFiltered32f,  imageROISize, wSize, wSize_n, sigma_r);
     //Measure slapsed time
     cudaEventRecord(stop);
     
     //Convert back to uchar, add offset to pointer to remove border
-    nppiConvert_32f8u_C1R(pFilteredImage32f, stepBytesFiltered32f, pFilteredImage8u, stepBytesFiltered8u, imageROIwBorderSize, NPP_RND_FINANCIAL);
-    
-    cudaMemcpy2D((void *) &outputImage.data[0], outputImage.step[0], (void *) (pFilteredImage8u + imageTopLeftOffset*stepBytesFiltered8u/sizeof(Npp8u)+imageTopLeftOffset), 
-                 stepBytesFiltered8u, imageROISize.width, imageROISize.height, cudaMemcpyDeviceToHost);
+    status = nppiConvert_32f8u_C1R(pFilteredImage32f, stepBytesFiltered32f, pFilteredImage8u, stepBytesFiltered8u, imageROISize, NPP_RND_FINANCIAL);
+    if (status !=0) cout << " error converting" << status << endl;
 
+    cudaStatus = cudaMemcpy2D(outputImage.data, outputImage.step[0], pFilteredImage8u,
+                 stepBytesFiltered8u, imageROISize.width, imageROISize.height, cudaMemcpyDeviceToHost);
+    if (cudaStatus !=cudaSuccess) cout << " error copying back to host" << cudaStatus << endl;
     cudaEventSynchronize(stop);
     float elapsed = 0;
     cudaEventElapsedTime(&elapsed, start, stop);
@@ -182,9 +214,9 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     nppiFree(pSrcImage8u);
     nppiFree(pSrcwBorderImage);
     nppiFree(pFilteredImage32f);
-    nppiFree(pUSMImage);
+    //OLD nppiFree(pUSMImage);
     nppiFree(pFilteredImage8u);    
-    nppsFree(pUSMBuffer);
+    //OLD nppsFree(pUSMBuffer);
     cout << elapsed/1000 <<endl;
 
     return outputImage;
