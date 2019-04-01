@@ -10,7 +10,7 @@ CC = icpc
 CFLAGS_KNL = -g -qopenmp -O3 -xMIC-AVX512  -fma -align -finline-functions 
 CFLAGS_DEBUG = -g -qopenmp -O3  -fma -align -finline-functions 
 CFLAGS_KNL_DEBUG = -g -qopenmp -O3 -xMIC-AVX512  -fma -align -finline-functions 
-CFLAGS = -g -qopenmp -O3  -fma -align -finline-functions 
+CFLAGS = -g -qopenmp -O3 -xCORE-AVX2 -fma -align -finline-functions 
 
 LIBS = -lippi -lippcv -lippcc -lipps -lippvm  -lippcore `pkg-config --cflags --libs opencv` 
 
