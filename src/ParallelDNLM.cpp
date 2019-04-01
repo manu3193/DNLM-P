@@ -8,8 +8,8 @@ using namespace std;
  *  * @brief      Constructs the object with default parameters
  *   */
 ParallelDNLM::ParallelDNLM(){
-    this->wSize = 5;
-    this->wSize_n = 3;
+    this->wSize = 21;
+    this->wSize_n = 7;
     this->kernelStd = 3;
     this->kernelLen = 16;
     this->sigma_r = 10; 
