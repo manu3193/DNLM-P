@@ -1,12 +1,12 @@
-CUDA_HOME = /opt/tools/cuda-9.0.176
-#CUDA_HOME = /opt/tools/cuda-8.0
+#CUDA_HOME = /opt/tools/cuda-9.0.176
+CUDA_HOME = /opt/tools/cuda-8.0
 # define the C compiler to use
  CC = nvcc 
 # define any compile-time flags
-CFLAGS_DEBUG = -g -G -O0 -cudart static -gencode arch=compute_35,code=sm_35 -use_fast_math
-CFLAGS = -O3 -cudart static -gencode arch=compute_35,code=sm_35 -use_fast_math
+CFLAGS_DEBUG = -g -G -ccbin pgc++ -Xcompiler -ta:tesla -Xcompiler -fast -Xcompiler -std=c++11 -cudart static -use_fast_math
+CFLAGS = -O3 -ccbin pgc++  -Xcompiler -ta:tesla -Xcompiler -fast -Xcompiler -std=c++11 -cudart static -use_fast_math
 
-LIBS = -lnppc_static -lnppial_static -lnppitc_static -lnppidei_static -lnppif_static -lnppisu_static -lnppist_static -lnpps_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
+LIBS = -lnppc -lnppial -lnppitc -lnppidei -lnppif -lnppisu -lnppist -lnpps -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
 #LIBS = -lnppc_static -lnppi_static -lnpps_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
 LDFLAGS = -L$(CUDA_HOME)/lib64 -L/opt/tools/opencv-3/lib
 LDFLAGS_DEBUG = -L$(CUDA_HOME)/lib64 -L/opt/tools/opencv-3/lib
