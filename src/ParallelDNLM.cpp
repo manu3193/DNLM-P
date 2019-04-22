@@ -40,27 +40,27 @@ ParallelDNLM::ParallelDNLM(int wSize, int wSize_n, float sigma_r, float lambda, 
 
 int main(int argc, char* argv[]){
     ParallelDNLM *parallelDNLM;
-    regex intRegex = regex("[+]?[0-9]+");
-    regex floatRegex = regex("[+]?([0-9]*[.])?[0-9]+");
+    //regex intRegex = regex("[+]?[0-9]+");
+    //regex floatRegex = regex("[+]?([0-9]*[.])?[0-9]+");
 
     if (argc == 2){
         //cout << "Using default parameters W=21x21, W_n=7x7, sigma_r=10, lambda=1, USM_len=16,USM_std=3" << endl;
         parallelDNLM = new ParallelDNLM();
     } 
     //Check input arguments
-    else if (argc !=8){
-        cerr << "Error parsing parameters, please look at the documentation for correct use" <<endl;
-        return -1;
-    }
-    else if (!regex_match(string(argv[2]), intRegex) & !regex_match(string(argv[3]), intRegex) & !regex_match(string(argv[6]), intRegex)){
-        return -1;
-    }
-    else if (!regex_match(string(argv[4]), floatRegex) & !regex_match(string(argv[5]), floatRegex)  & !regex_match(string(argv[7]), floatRegex)){
-        return -1;
-    }
-    else { 
-        parallelDNLM = new ParallelDNLM(stoi(string(argv[2])), stoi(string(argv[3])), stof(string(argv[4])), stof(string(argv[5])), stoi(string(argv[6])), stof(string(argv[7])));
-    } 
+    //else if (argc !=8){
+    //    cerr << "Error parsing parameters, please look at the documentation for correct use" <<endl;
+    //    return -1;
+    //}
+    //else if (!regex_match(string(argv[2]), intRegex) & !regex_match(string(argv[3]), intRegex) & !regex_match(string(argv[6]), intRegex)){
+    //    return -1;
+    //}
+    //else if (!regex_match(string(argv[4]), floatRegex) & !regex_match(string(argv[5]), floatRegex)  & !regex_match(string(argv[7]), floatRegex)){
+    //    return -1;
+    //}
+    //else { 
+    //    parallelDNLM = new ParallelDNLM(stoi(string(argv[2])), stoi(string(argv[3])), stof(string(argv[4])), stof(string(argv[5])), stoi(string(argv[6])), stof(string(argv[7])));
+    //} 
 
     //Open input image
     const string inputFile = argv[1];
@@ -85,8 +85,7 @@ int main(int argc, char* argv[]){
     outputImage.release();
 
     return 0;
-                                                                                                                                                                                             return 0;
-                                                                                                                                                                                          }
+                                                                                                                                                                                              }
 
 
 Mat ParallelDNLM::processImage(const Mat& inputImage){
@@ -123,9 +122,7 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
 
     }    
     //Pointers to NPP type images 
-    //OLD Npp32f *pSrcImage32f = NULL, *pSrcwBorderImage = NULL, *pUSMImage = NULL, *pFilteredImage32f = NULL;
     Npp32f *pSrcImage32f = NULL, *pSrcwBorderImage = NULL, *pFilteredImage32f = NULL;
-    //OLD Npp8u *pUSMBuffer = NULL, *pSrcImage8u = NULL, *pFilteredImage8u = NULL;
     Npp8u *pSrcImage8u = NULL, *pFilteredImage8u = NULL;
     //Variable to store image step size in bytes 
     int stepBytesSrc32f = 0;
@@ -149,52 +146,33 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
 
     //Compute border offset for border replicated image
     const int imageTopLeftOffset = floor(wSize_n/2);
-    imageROIwBorderSize = {imageROISize.width + 2*imageTopLeftOffset, imageROISize.height + 2*imageTopLeftOffset};
-    //OLD Variable to store USM buffer size
-    //OLD int usmBufferSize = 0;
-    //OLD Compute USM radius
-    //OLD const Npp32f usmRadius = (kernelLen-1)/2;  
-    //OLD Compute USM buffer size
-    //OLD status = nppiFilterUnsharpGetBufferSize_32f_C1R(usmRadius, kernelStd, &usmBufferSize);
+    imageROIwBorderSize.width = imageROISize.width + 2*imageTopLeftOffset;
+    imageROIwBorderSize.height = imageROISize.height + 2*imageTopLeftOffset;
     //Allocate memory for gpu images
     pSrcImage8u = nppiMalloc_8u_C1(imageROISize.width, imageROISize.height, &stepBytesSrc8u);
     pSrcImage32f = nppiMalloc_32f_C1(imageROISize.width, imageROISize.height, &stepBytesSrc32f); 
     pSrcwBorderImage = nppiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesSrcwBorder);
-    //OLD pUSMImage =  nppiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesUSM);
     pFilteredImage32f = nppiMalloc_32f_C1(imageROISize.width, imageROISize.height, &stepBytesFiltered32f);   
     pFilteredImage8u = nppiMalloc_8u_C1(imageROISize.width, imageROISize.height, &stepBytesFiltered8u);
     
     if (pSrcImage8u ==NULL) cout << "error alocating pSrcImage8u" << endl;
     if (pSrcImage32f ==NULL) cout << "error alocating pSrcImage32f" << endl;
     if (pSrcwBorderImage ==NULL) cout << "error alocating pSrcwBorderImage" << endl;
-    //OLD if (pUSMImage ==NULL) cout << "error alocating pUSMImage" << endl;
     if (pFilteredImage32f ==NULL) cout << "error alocating pFilteredImage32f" << endl;
     if (pFilteredImage8u ==NULL) cout << "error alocating pFilteredImage8u" << endl;
     
-    //Allocate memory for usm bufer
-    //OLD pUSMBuffer = nppsMalloc_8u(usmBufferSize);
     //Copy images to gpu
     cudaStatus = cudaMemcpy2D(pSrcImage8u, stepBytesSrc8u, srcImage.data, srcImage.step[0], imageROISize.width, imageROISize.height, cudaMemcpyHostToDevice);
-    // OLD cudaStatus = cudaMemcpy2D((void*) pSrcImage8u, stepBytesSrc8u, (void*) srcImage.data, srcImage.step[0], imageROISize.width, imageROISize.height, cudaMemcpyHostToDevice);
-    if (cudaStatus !=cudaSuccess) cout << " error 2 " << cudaStatus  << " " << stepBytesSrc8u << " " << srcImage.step[0] << endl;
     //Convert input image to 32f format
     status = nppiConvert_8u32f_C1R(pSrcImage8u, stepBytesSrc8u, pSrcImage32f, stepBytesSrc32f, imageROISize);
-    if (status !=0) cout << " error 3 " << status << endl;
     //Normalize converted image
-    //ippiMulC_32f_C1IR(normFactor, pSrc32fImage, stepBytesSrc, imageROISize);
+    //status = nppiMulC_32f_C1IR(normFactor, pSrc32fImage, stepBytesSrc, imageROISize);
 
     // Mirror border for full image filtering
     status = nppiCopyWrapBorder_32f_C1R(pSrcImage32f, stepBytesSrc32f, imageROISize, pSrcwBorderImage, stepBytesSrcwBorder, imageROIwBorderSize, imageTopLeftOffset, imageTopLeftOffset);
     if (status !=0) cout << " error 4 " << status << endl;
     //timer start
     cudaEventRecord(start); 
-    //OLD Applying USM Filter
-    //OLD status =nppiFilterUnsharpBorder_32f_C1R(pSrcwBorderImage, stepBytesSrcwBorder, {mageTopLeftOffset, imageTopLeftOffset}, pUSMImage, stepBytesUSM, imageROIwBorderSize, usmRadius, kernelStd, lambda, 2, NPP_BORDER_REPLICATE, pUSMBuffer);
-    //OLD if (status !=0) cout << " error 5 " << status << endl;
-    //Unormalize
-    //Here
-    //Aplying DNLM filter
-    //OLD this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pUSMImage, stepBytesUSM, pFilteredImage32f, stepBytesFiltered32f,  imageROISize, wSize, wSize_n, sigma_r);
     this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pFilteredImage32f, stepBytesFiltered32f,  imageROISize, wSize, wSize_n, sigma_r);
     //Measure slapsed time
     cudaEventRecord(stop);
@@ -214,9 +192,7 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     nppiFree(pSrcImage8u);
     nppiFree(pSrcwBorderImage);
     nppiFree(pFilteredImage32f);
-    //OLD nppiFree(pUSMImage);
     nppiFree(pFilteredImage8u);    
-    //OLD nppsFree(pUSMBuffer);
     cout << elapsed/1000 <<endl;
 
     return outputImage;

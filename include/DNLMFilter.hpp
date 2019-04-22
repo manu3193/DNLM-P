@@ -3,12 +3,10 @@
 
 #include <cstdio>
 #include <algorithm>
-#include <opencv2/opencv.hpp>
 #include <npp.h>
-#include <nppi.h>
-#include <npps.h>
+#include <opencv2/opencv.hpp>
 #include <cuda_runtime.h>
-#include <cuda_profiler_api.h>
+
 using namespace cv;
 using namespace std;
 

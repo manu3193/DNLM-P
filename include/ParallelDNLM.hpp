@@ -3,7 +3,7 @@
 
 #include <string>
 #include <iostream>
-#include <regex>
+//#include <regex>
 #include <DNLMFilter.hpp>
 //#include <NoAdaptiveUSM.hpp>
 #include <cuda_runtime.h>

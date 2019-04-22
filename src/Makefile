@@ -1,10 +1,11 @@
 #CUDA_HOME = /opt/tools/cuda-9.0.176
 CUDA_HOME = /opt/tools/cuda-8.0
 # define the C compiler to use
- CC = nvcc 
+CC = nvcc 
 # define any compile-time flags
-CFLAGS_DEBUG = -g -G -ccbin pgc++ -Xcompiler -ta:tesla -Xcompiler -fast -Xcompiler -std=c++11 -cudart static -use_fast_math
-CFLAGS = -O3 -ccbin pgc++  -Xcompiler -ta:tesla -Xcompiler -fast -Xcompiler -std=c++11 -cudart static -use_fast_math
+CFLAGS_DEBUG = -g -G -cudart static -use_fast_math
+CFLAGS = -g -G -ccbin=pgc++ -Xcompiler "-g  -Minfo=accel -ta=tesla:cuda8.0 -ta=tesla:nordc -ta=tesla:cc35 -fast -Mcuda:8.0 " -cudart static -use_fast_math
+PGFLAGS = -std=c++11 -Minfo=all -ta=tesla:cuda8.0 -fast -Mcuda
 
 LIBS = -lnppc -lnppial -lnppitc -lnppidei -lnppif -lnppisu -lnppist -lnpps -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
 #LIBS = -lnppc_static -lnppi_static -lnpps_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
@@ -15,7 +16,7 @@ LDFLAGS_DEBUG = -L$(CUDA_HOME)/lib64 -L/opt/tools/opencv-3/lib
 INCLUDES= -I../include -I$(CUDA_HOME)/include -I/opt/tools/opencv-3/include 
 
 # define the C source files
-SRCS =  DNLMFilter.cpp ParallelDNLM.cpp
+SRCS =  DNLMFilter.cpp ParallelDNLM.cpp DNLMFilter_OpenACC.cpp 
 # define the C object files
 #
 # This uses Suffix Replacement within a macro:
@@ -42,6 +43,6 @@ debug: $(OBJS)
 # the rule(a .c file) and $@: the name of the target of the rule (a .o file)
 # (see the gnu make manual section about automatic variables)
 .c.o:
-	$(CC) -c $(CFLAGS) $(INCLUDES) $<
+	pgc++ -c $(PGFLAGS) $(INCLUDES) $<
 clean:
 	rm $(MAIN) $(OBJS)
