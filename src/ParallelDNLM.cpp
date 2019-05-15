@@ -3,6 +3,7 @@
 
 using namespace std;
   
+void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, float* pDst, int stepBytesDst, int windowRadius, int neighborRadius, int imageWidth, int imageHeight, int windowWidth, int windowHeight, int neighborWidth, int neighborHeight, float sigma_r);
 
 /**
  *  * @brief      Constructs the object with default parameters
@@ -12,7 +13,7 @@ ParallelDNLM::ParallelDNLM(){
     this->wSize_n = 7;
     this->kernelStd = 3;
     this->kernelLen = 16;
-    this->sigma_r = 10; 
+    this->sigma_r = 7; 
     this->lambda = 1;
 }
 
@@ -40,27 +41,28 @@ ParallelDNLM::ParallelDNLM(int wSize, int wSize_n, float sigma_r, float lambda, 
 
 int main(int argc, char* argv[]){
     ParallelDNLM *parallelDNLM;
+
     //regex intRegex = regex("[+]?[0-9]+");
     //regex floatRegex = regex("[+]?([0-9]*[.])?[0-9]+");
 
     if (argc == 2){
-        //cout << "Using default parameters W=21x21, W_n=7x7, sigma_r=10, lambda=1, USM_len=16,USM_std=3" << endl;
+        cout << "Using default parameters W=21x21, W_n=7x7, sigma_r=10, lambda=1, USM_len=16,USM_std=3" << endl;
         parallelDNLM = new ParallelDNLM();
     } 
     //Check input arguments
-    //else if (argc !=8){
-    //    cerr << "Error parsing parameters, please look at the documentation for correct use" <<endl;
-    //    return -1;
-    //}
+    else if (argc !=8){
+        cerr << "Error parsing parameters, please look at the documentation for correct use" <<endl;
+        return -1;
+    }
     //else if (!regex_match(string(argv[2]), intRegex) & !regex_match(string(argv[3]), intRegex) & !regex_match(string(argv[6]), intRegex)){
     //    return -1;
     //}
     //else if (!regex_match(string(argv[4]), floatRegex) & !regex_match(string(argv[5]), floatRegex)  & !regex_match(string(argv[7]), floatRegex)){
     //    return -1;
     //}
-    //else { 
-    //    parallelDNLM = new ParallelDNLM(stoi(string(argv[2])), stoi(string(argv[3])), stof(string(argv[4])), stof(string(argv[5])), stoi(string(argv[6])), stof(string(argv[7])));
-    //} 
+    else { 
+        parallelDNLM = new ParallelDNLM(stoi(string(argv[2])), stoi(string(argv[3])), stof(string(argv[4])), stof(string(argv[5])), stoi(string(argv[6])), stof(string(argv[7])));
+    } 
 
     //Open input image
     const string inputFile = argv[1];
@@ -68,16 +70,15 @@ int main(int argc, char* argv[]){
     string::size_type pAt = inputFile.find_last_of('.');
     // Form the new name with container
     const string outputFile = inputFile.substr(0, pAt) + "_DeNLM.png";
-    Mat inputImage, outputImage;
     //This version only works with grayscale images
-    inputImage = imread(inputFile, IMREAD_GRAYSCALE);
+    Mat inputImage = imread(inputFile, IMREAD_GRAYSCALE);
     //Check for errors when loading image
     if(!inputImage.data){
         cout << "Could not read image from file." << endl;
         return -1;
     }
-    //Process image   
-    outputImage = parallelDNLM->processImage(inputImage);
+    //Process image 
+    Mat outputImage  = parallelDNLM->processImage(inputImage);
     //Write image to output file.
     imwrite(outputFile, outputImage);
     //Release object memory
@@ -88,7 +89,7 @@ int main(int argc, char* argv[]){
                                                                                                                                                                                               }
 
 
-Mat ParallelDNLM::processImage(const Mat& inputImage){
+Mat ParallelDNLM::processImage(const Mat inputImage){
    //Set Parameters for processing 
     Mat fDeceivedNLM = filterDNLM(inputImage, wSize, wSize_n, sigma_r, lambda, kernelLen, kernelStd);
 
@@ -96,7 +97,7 @@ Mat ParallelDNLM::processImage(const Mat& inputImage){
 }
 
 //Input image must be from 0 to 255
-Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float sigma_r, float lambda, int kernelLen, float kernelStd){
+Mat ParallelDNLM::filterDNLM(const Mat inputImage, int wSize, int wSize_n, float sigma_r, float lambda, int kernelLen, float kernelStd){
     
     //Get cuda device properties
     int device;
@@ -119,7 +120,6 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
         cout <<"  Memory Bus Width (bits): "<<prop.memoryBusWidth<<endl;
         cout <<"  Peak Memory Bandwidth (GB/s): "<<2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6 <<endl;
         cout <<"  Compute Capability: "<<prop.major<<"."<<prop.minor<<endl;
-
     }    
     //Pointers to NPP type images 
     Npp32f *pSrcImage32f = NULL, *pSrcwBorderImage = NULL, *pFilteredImage32f = NULL;
@@ -136,16 +136,18 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     Npp32f normFactor = 1.0/255.0; 
     Npp32f scaleFactor = 255.0; 
 
-    //cv::Mat output filtered image
-    Mat outputImage = Mat(srcImage.size(), srcImage.type());
+    //Create output Mat
+    Mat outputImage = Mat(inputImage.size(), inputImage.type());
 
     //Variables used for image format conversion
     NppiSize imageROISize, imageROIwBorderSize;
-    imageROISize.width = srcImage.size().width;
-    imageROISize.height = srcImage.size().height;
+    imageROISize.width = inputImage.size().width;
+    imageROISize.height = inputImage.size().height;
 
     //Compute border offset for border replicated image
-    const int imageTopLeftOffset = floor(wSize_n/2);
+    const int windowRadius = floor(wSize/2);
+    const int neighborRadius = floor(wSize_n/2);
+    const int imageTopLeftOffset = windowRadius + neighborRadius;
     imageROIwBorderSize.width = imageROISize.width + 2*imageTopLeftOffset;
     imageROIwBorderSize.height = imageROISize.height + 2*imageTopLeftOffset;
     //Allocate memory for gpu images
@@ -162,7 +164,7 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     if (pFilteredImage8u ==NULL) cout << "error alocating pFilteredImage8u" << endl;
     
     //Copy images to gpu
-    cudaStatus = cudaMemcpy2D(pSrcImage8u, stepBytesSrc8u, srcImage.data, srcImage.step[0], imageROISize.width, imageROISize.height, cudaMemcpyHostToDevice);
+    cudaStatus = cudaMemcpy2D(pSrcImage8u, stepBytesSrc8u, inputImage.data, inputImage.step[0], imageROISize.width, imageROISize.height, cudaMemcpyHostToDevice);
     //Convert input image to 32f format
     status = nppiConvert_8u32f_C1R(pSrcImage8u, stepBytesSrc8u, pSrcImage32f, stepBytesSrc32f, imageROISize);
     //Normalize converted image
@@ -173,14 +175,15 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     if (status !=0) cout << " error 4 " << status << endl;
     //timer start
     cudaEventRecord(start); 
-    this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pFilteredImage32f, stepBytesFiltered32f,  imageROISize, wSize, wSize_n, sigma_r);
+    //this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pFilteredImage32f, stepBytesFiltered32f,  imageROISize, wSize, wSize_n, sigma_r);
     //Measure slapsed time
+    DNLM_OpenACC(pSrcwBorderImage, stepBytesSrcwBorder, pFilteredImage32f, stepBytesFiltered32f, windowRadius, neighborRadius, imageROISize.width, imageROISize.height, wSize , wSize, wSize_n, wSize_n, sigma_r);
+
     cudaEventRecord(stop);
     
     //Convert back to uchar, add offset to pointer to remove border
     status = nppiConvert_32f8u_C1R(pFilteredImage32f, stepBytesFiltered32f, pFilteredImage8u, stepBytesFiltered8u, imageROISize, NPP_RND_FINANCIAL);
     if (status !=0) cout << " error converting" << status << endl;
-
     cudaStatus = cudaMemcpy2D(outputImage.data, outputImage.step[0], pFilteredImage8u,
                  stepBytesFiltered8u, imageROISize.width, imageROISize.height, cudaMemcpyDeviceToHost);
     if (cudaStatus !=cudaSuccess) cout << " error copying back to host" << cudaStatus << endl;

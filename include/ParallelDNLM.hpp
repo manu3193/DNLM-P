@@ -3,13 +3,18 @@
 
 #include <string>
 #include <iostream>
-//#include <regex>
-#include <DNLMFilter.hpp>
+#include <regex>
+//#include <DNLMFilter.hpp>
 //#include <NoAdaptiveUSM.hpp>
 #include <cuda_runtime.h>
+#include <npp.h>
+
+#include <opencv2/opencv.hpp>
 
 using namespace cv;
 using namespace std;
+
+
 
 /**
  * @brief      Class for parallel DNLM filter.
@@ -36,7 +41,7 @@ public:
 	 * For recomended parameters use 6 * kernelStd = kernelLen + 2
 	 * 
 	 */
-	ParallelDNLM(int wSize, int wSize_n, float sigma_r, float lambda, int kernelLen, float kernelStd);
+        ParallelDNLM(int wSize, int wSize_n, float sigma_r, float lambda, int kernelLen, float kernelStd);
 	
 	/**
 	 * @brief      Process the image
@@ -45,10 +50,10 @@ public:
 	 *
 	 * @return     Processed image as opencv Mat object
 	 */
-	Mat processImage(const Mat& U);
+	Mat processImage(const Mat);
 private:
 
-	DNLMFilter dnlmFilter;
+//	DNLMFilter dnlmFilter;
 //	NoAdaptiveUSM noAdaptiveUSM;
 
 	int wSize;
@@ -69,8 +74,8 @@ private:
 	 * @param[in]  kernelLen  The kernel length of USM filter USM_kernel_len = kernelLen * kernelLen
 	 * @param[in]  kernelStd  The kernel std of USM filter. 
 	 *
-	 * @return     Filtered image as OpenCV Mat object
+	 * @return int status     
 	 */
-	Mat filterDNLM(const Mat& U, int wSize, int wSize_n, float sigma_r, float lambda, int kernelLen, float kernelStd);
+         Mat filterDNLM(const Mat, int , int , float , float , int , float);
 };
 #endif /* PARALLELDNLM_HPP_ */
