@@ -104,8 +104,8 @@ Mat ParallelDNLM::filterDNLM(const Mat inputImage, int wSize, int wSize_n, float
     cudaError_t cudaStatus = cudaSuccess;
     //Create CUDA events to measure execution time
     cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
+    //cudaEventCreate(&start);
+    //cudaEventCreate(&stop);
     //Status variable helps to check for errors
     NppStatus status =  NPP_NO_ERROR;
     
@@ -174,12 +174,12 @@ Mat ParallelDNLM::filterDNLM(const Mat inputImage, int wSize, int wSize_n, float
     status = nppiCopyWrapBorder_32f_C1R(pSrcImage32f, stepBytesSrc32f, imageROISize, pSrcwBorderImage, stepBytesSrcwBorder, imageROIwBorderSize, imageTopLeftOffset, imageTopLeftOffset);
     if (status !=0) cout << " error 4 " << status << endl;
     //timer start
-    cudaEventRecord(start); 
+    //cudaEventRecord(start); 
     //this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pFilteredImage32f, stepBytesFiltered32f,  imageROISize, wSize, wSize_n, sigma_r);
     //Measure slapsed time
     DNLM_OpenACC(pSrcwBorderImage, stepBytesSrcwBorder, pFilteredImage32f, stepBytesFiltered32f, windowRadius, neighborRadius, imageROISize.width, imageROISize.height, wSize , wSize, wSize_n, wSize_n, sigma_r);
 
-    cudaEventRecord(stop);
+    //cudaEventRecord(stop);
     
     //Convert back to uchar, add offset to pointer to remove border
     status = nppiConvert_32f8u_C1R(pFilteredImage32f, stepBytesFiltered32f, pFilteredImage8u, stepBytesFiltered8u, imageROISize, NPP_RND_FINANCIAL);
@@ -187,16 +187,16 @@ Mat ParallelDNLM::filterDNLM(const Mat inputImage, int wSize, int wSize_n, float
     cudaStatus = cudaMemcpy2D(outputImage.data, outputImage.step[0], pFilteredImage8u,
                  stepBytesFiltered8u, imageROISize.width, imageROISize.height, cudaMemcpyDeviceToHost);
     if (cudaStatus !=cudaSuccess) cout << " error copying back to host" << cudaStatus << endl;
-    cudaEventSynchronize(stop);
+    //cudaEventSynchronize(stop);
     float elapsed = 0;
-    cudaEventElapsedTime(&elapsed, start, stop);
+    //cudaEventElapsedTime(&elapsed, start, stop);
     //Freeing memory
     nppiFree(pSrcImage32f); 
     nppiFree(pSrcImage8u);
     nppiFree(pSrcwBorderImage);
     nppiFree(pFilteredImage32f);
     nppiFree(pFilteredImage8u);    
-    cout << elapsed/1000 <<endl;
+    //cout << elapsed/1000 <<endl;
 
     return outputImage;
 }
