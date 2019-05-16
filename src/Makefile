@@ -1,29 +1,26 @@
-#
-# 'make'        build executable file 'mycc'
-# 'make clean'  removes all .o and executable files
-#
-
-IPP_LIBS_PATH = $(IPPROOT)/lib/intel64
+#CUDA_HOME=/opt/tools/cuda-10.1.105
+CUDA_HOME = /opt/tools/cuda-9.0.176
+#CUDA_HOME = /opt/tools/cuda-8.0
 # define the C compiler to use
-CC = icpc
+CC = nvcc 
+PGI = pgc++
 # define any compile-time flags
-CFLAGS_KNL = -g -qopenmp -O3 -xMIC-AVX512  -fma -align -finline-functions 
-CFLAGS_DEBUG = -g -qopenmp -O3  -fma -align -finline-functions 
-CFLAGS_KNL_DEBUG = -g -qopenmp -O3 -xMIC-AVX512  -fma -align -finline-functions 
-CFLAGS = -g -qopenmp -O3 -xCORE-AVX2  -fma -align -finline-functions 
-
-LIBS = -lippi -lippcv -lippcc -lipps -lippvm  -lippcore -lopencv_core -lopencv_highgui -lopencv_imgcodecs 
-
-LDFLAGS =-g3 -Wall
-LDFLAGS_DEBUG =-g3 -Wall -qopt-report=5  -qopt-report-phase=loop,vec,cg -qopt-report-embed
+CFLAGS_DEBUG = -g -G -ccbin=pgc++ -Xcompiler "-g -std=c++11 -Minfo=accel  -ta=tesla:nordc -ta=tesla:cc35 -O0 -Mcuda " -cudart static -O0
+CFLAGS = -ccbin=pgc++ -Xcompiler " -std=c++11 -Minfo=accel  -ta=tesla:nordc -ta=tesla:cc35 -fast -Mcuda " -cudart static -use_fast_math
+CFALGS_MC = -g -std=c++11 -Minfo=accel -acc -ta=multicore -O0
+LIBS = -lnppc -lnppial -lnppitc -lnppidei -lnppif -lnppisu -lnppist -lnpps -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
+LIBS_MC = -lopencv_core -lopencv_highgui -lopencv_imgcodecs
+#LIBS = -lnppc_static -lnppi_static -lnpps_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
+LDFLAGS = -L$(CUDA_HOME)/lib64 -L/opt/tools/opencv-3/lib
+LDFLAGS_DEBUG = -L$(CUDA_HOME)/lib64 -L/opt/tools/opencv-3/lib
+LDFLAGS_MC = -L/opt/tools/opencv-3/lib
 # define any directories containing header files other than /usr/include
 #
-INCLUDES= -I../include -I$(IPPROOT)/include 
-
-
+INCLUDES= -I../include -I$(CUDA_HOME)/include -I/opt/tools/opencv-3/include 
+INCLUDES_MC = -I/opt/tools/opencv-3/include
 # define the C source files
-SRCS =  NoAdaptiveUSM.cpp DNLMFilter.cpp ParallelDNLM.cpp
-
+SRCS =  ParallelDNLM.cpp  DNLMFilter_OpenACC.cpp 
+SRCS_MC =  ParallelDNLM_MC.cpp  DNLMFilter_OpenACC.cpp
 # define the C object files
 #
 # This uses Suffix Replacement within a macro:
@@ -33,42 +30,26 @@ SRCS =  NoAdaptiveUSM.cpp DNLMFilter.cpp ParallelDNLM.cpp
 # with the .o suffix
 #
 OBJS = $(SRCS:.c=.o)
-
+OBJS_MC = $(SRCS_MC:.c=.o)
 # define the executable file
 MAIN = dnlmfilter
-MAIN_KNL = dnlmfilter_knl
-
 #
 # The following part of the makefile is generic; it can be used to
 # build any executable just by changing the definitions above and by
 # deleting dependencies appended to the file from 'make depend'
 #
-
 .PHONY: clean
-
-
 $(MAIN): $(OBJS) 
-	   $(CC) $(OBJS) $(CFLAGS) $(INCLUDES)  -o $@ $(LDFLAGS) $(LIBS)
-
-knl: $(OBJS) 
-	   $(CC) $(OBJS) $(CFLAGS_KNL) $(INCLUDES)  -o $(MAIN_KNL) $(LDFLAGS) $(LIBS)
-
+	$(CC) $(OBJS) $(CFLAGS) $(INCLUDES)  -o $@ $(LDFLAGS) $(LIBS)
+multicore: $(OBJS_MC)  
+	$(PGI) $(OBJS_MC) $(CFLAGS_MC) $(INCLUDES_MC)  -o $@ $(LDFLAGS_MC) $(LIBS_MC)
 debug: $(OBJS) 
-	   $(CC) $(OBJS) $(CFLAGS_DEBUG) $(INCLUDES)  -o $(MAIN) $(LDFLAGS_DEBUG) $(LIBS)
-
-knl-debug: $(OBJS) 
-	   $(CC) $(OBJS) $(CFLAGS_KNL_DEBUG) $(INCLUDES)  -o $(MAIN_KNL) $(LDFLAGS_DEBUG) $(LIBS)
-
-
-# this is a suffix replacement rule for building .o's from .c's
+	$(CC) $(OBJS) $(CFLAGS_DEBUG) $(INCLUDES)  -o $(MAIN) $(LDFLAGS_DEBUG) $(LIBS)
+#this is a suffix replacement rule for building .o's from .c's
 # it uses automatic variables $<: the name of the prerequisite of
 # the rule(a .c file) and $@: the name of the target of the rule (a .o file)
 # (see the gnu make manual section about automatic variables)
 .c.o:
-	 $(CC) -c $(CFLAGS) $(INCLUDES) $<
-
-
-
+	pgc++ -c $(PGFLAGS) $(INCLUDES) $<
 clean:
-	rm $(MAIN) $(OBJS)
-
+	rm *.o
