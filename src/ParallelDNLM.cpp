@@ -12,7 +12,7 @@ ParallelDNLM::ParallelDNLM(){
     this->wSize_n = 7;
     this->kernelStd = 3;
     this->kernelLen = 16;
-    this->sigma_r = 1; 
+    this->sigma_r = 2.1; 
     this->lambda = 1;
 }
 
@@ -140,6 +140,7 @@ Mat ParallelDNLM::filterDNLM(const Mat inputImage, int wSize, int wSize_n, float
     imageROIwBorderSize = {imageROISize.width + 2*imageTopLeftOffset, imageROISize.height + 2*imageTopLeftOffset};     
     integralImageROISize = {imageROIwBorderSize.width+1, imageROIwBorderSize.height+1};
     //Allocate memory for gpu images
+    cudaStatus = cudaMallocPitch(&pSqrIntegralImage64f, (size_t*) &stepBytesSqrIntegral64f, integralImageROISize.width * sizeof(Npp64f), integralImageROISize.height);
     pSrcImage8u = nppiMalloc_8u_C1(imageROISize.width, imageROISize.height, &stepBytesSrc8u);
     pSrcwBorderImage32f = nppiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesSrcwBorder32f); 
     pIntegralImage32f = nppiMalloc_32f_C1(integralImageROISize.width, integralImageROISize.height, &stepBytesIntegral);
@@ -149,7 +150,6 @@ Mat ParallelDNLM::filterDNLM(const Mat inputImage, int wSize, int wSize_n, float
     
     cudaMemcpy2D(pSrcImage8u, stepBytesSrc8u, &inputImage.data[0], inputImage.step[0], imageROISize.width, imageROISize.height, cudaMemcpyHostToDevice);
  
-    cudaStatus = cudaMallocPitch(&pSqrIntegralImage64f, (size_t*) &stepBytesSqrIntegral64f, integralImageROISize.width * sizeof(Npp64f), integralImageROISize.height);
     //Set result gpu image to 0
     //nppiSet_32f_C1R((Npp32f) 0.0f, pFilteredImage32f, stepBytesFiltered32f, {imageROISize.width, imageROISize.height});
     // Mirror border for full image filtering
@@ -162,8 +162,6 @@ Mat ParallelDNLM::filterDNLM(const Mat inputImage, int wSize, int wSize_n, float
     status = nppiMulC_32f_C1IR(normFactor32f, pSrcwBorderImage32f, stepBytesSrcwBorder32f, imageROIwBorderSize);
     status = nppsMulC_64f_I(normFactor64f, pSqrIntegralImage64f, integralImageROISize.height*stepBytesSqrIntegral64f/sizeof(Npp64f));   
     status = nppsConvert_64f32f(pSqrIntegralImage64f, pIntegralImage32f, integralImageROISize.height*stepBytesSqrIntegral64f/sizeof(Npp64f));
-    //Normalize converted image
-    //ippiMulC_32f_C1IR(normFactor, pSrc32fImage, stepBytesSrc, imageROISize);
 
     //timer start
     //cudaEventRecord(start); 
