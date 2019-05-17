@@ -64,7 +64,7 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
                     {
                         for(int col = 0; col < windowWidth; col++)
                         {
-                            pEuclDist[col + row * windowWidth] = pEuclDist[col + row * windowWidth] *  -1/(sigma_r * sigma_r);
+                            pEuclDist[col + row * windowWidth] = pEuclDist[col + row * windowWidth] *  -1/2*(sigma_r * sigma_r);
                             pEuclDist[col + row * windowWidth] = expf(pEuclDist[col + row * windowWidth]);
                             sumExpTerm += pEuclDist[col + row * windowWidth];
                         }
