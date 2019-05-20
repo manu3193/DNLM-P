@@ -160,9 +160,8 @@ Mat ParallelDNLM::filterDNLM(const Mat inputImage, int wSize, int wSize_n, float
     status = nppiConvert_8u32f_C1R(pSrcwBorderImage8u, stepBytesSrcwBorder8u, pSrcwBorderImage32f, stepBytesSrcwBorder32f, imageROIwBorderSize);
     // Normalize input
     status = nppiMulC_32f_C1IR(normFactor32f, pSrcwBorderImage32f, stepBytesSrcwBorder32f, imageROIwBorderSize);
-    status = nppsMulC_64f_I(normFactor64f, pSqrIntegralImage64f, integralImageROISize.height*stepBytesSqrIntegral64f/sizeof(Npp64f));   
     status = nppsConvert_64f32f(pSqrIntegralImage64f, pIntegralImage32f, integralImageROISize.height*stepBytesSqrIntegral64f/sizeof(Npp64f));
-
+    status = nppiMulC_32f_C1IR(normFactor32f, pIntegralImage32f, stepBytesIntegral, integralImageROISize);
     //timer start
     //cudaEventRecord(start); 
     //Applying USM Filter

@@ -56,7 +56,7 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
                     }
                    
                     //#pragma acc loop
-                    #pragma acc loop  collapse(2) private(sqrSumIJNeighborhood, i, j)
+                    #pragma acc loop  collapse(2) 
                     for (int n = 0; n < windowHeight; n++)
                     {
 
