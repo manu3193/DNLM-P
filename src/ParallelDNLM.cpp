@@ -37,9 +37,11 @@ int main(int argc, char* argv[]){
     status = ippInit();
     if(status != ippStsNoErr)
         cerr <<"Processor not identified"<<endl;
-    
-    outputImage = parallelDNLM.processImage(inputImage);
 
+    double start = omp_get_wtime();
+    outputImage = parallelDNLM.processImage(inputImage);
+    double elapsed = omp_get_wtime() - start;
+    cout << "Elapsed time: "<<elapsed<<endl;
     //Write image to output file.
     imwrite(outputFile, outputImage);
 
@@ -121,12 +123,12 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     // Mirror border for full image filtering
     status = ippiCopyMirrorBorder_32f_C1R(pSrc32fImage, stepBytesSrc, imageROISize, pSrcwBorderImage, stepBytesSrcwBorder, imageROIwBorderSize, imageTopLeftOffset, imageTopLeftOffset);
     //timer start
-    timerStart();
+    //timerStart();
     
     this->noAdaptiveUSM.noAdaptiveUSM(pSrcwBorderImage, stepBytesSrcwBorder, pUSMImage, stepBytesUSM, imageROIwBorderSize, kernelStd, lambda, kernelLen);
     this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pUSMImage, stepBytesUSM, pFilteredImage, stepBytesFiltered, imageROISize, wSize, wSize_n, sigma_r);
 
-    double time = timerStop();
+    //double time = timerStop();
 
     //putting back everything
     ippiMulC_32f_C1IR(scaleFactor, pFilteredImage, stepBytesFiltered, imageROISize);
