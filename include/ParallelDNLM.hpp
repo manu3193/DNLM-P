@@ -7,6 +7,7 @@
 //#include <DNLMFilter.hpp>
 //#include <NoAdaptiveUSM.hpp>
 #include <cuda_runtime.h>
+#include <omp.h>
 #include <npp.h>
 
 #include <opencv2/opencv.hpp>

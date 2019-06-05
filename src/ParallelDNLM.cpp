@@ -77,8 +77,11 @@ int main(int argc, char* argv[]){
         cout << "Could not read image from file." << endl;
         return -1;
     }
+    double start = omp_get_wtime();
     //Process image 
     Mat outputImage  = parallelDNLM->processImage(inputImage);
+    double elapsed = omp_get_wtime() - start;
+    cout << "Elapsed time: "<<elapsed<<endl;
     //Write image to output file.
     imwrite(outputFile, outputImage);
     //Release object memory
