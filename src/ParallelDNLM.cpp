@@ -76,8 +76,11 @@ int main(int argc, char* argv[]){
         cout << "Could not read image from file." << endl;
         return -1;
     }
+    double start = omp_get_wtime();
     //Process image 
     Mat outputImage  = parallelDNLM->processImage(inputImage);
+    double elapsed = omp_get_wtime() - start;
+    cout << "Elapsed time: "<< elapsed<<endl;
     //Write image to output file.
     imwrite(outputFile, outputImage);
     //Release object memory
@@ -102,7 +105,7 @@ Mat ParallelDNLM::filterDNLM(const Mat inputImage, int wSize, int wSize_n, float
     //int device;
     cudaError_t cudaStatus = cudaSuccess;
     //Create CUDA events to measure execution time
-    cudaEvent_t start, stop;
+    //cudaEvent_t start, stop;
     //cudaEventCreate(&start);
     //cudaEventCreate(&stop);
     //Status variable helps to check for errors
