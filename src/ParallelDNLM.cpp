@@ -38,8 +38,10 @@ int main(int argc, char* argv[]){
     if(status != ippStsNoErr)
         cerr <<"Processor not identified"<<endl;
     
+    double start = omp_get_wtime();
     outputImage = parallelDNLM.processImage(inputImage);
-
+    double elapsed = omp_get_wtime()-start;
+    cout << "Elapsed time: "<<elapsed<<endl;
     //Write image to output file.
     imwrite(outputFile, outputImage);
 
@@ -131,13 +133,9 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     status = ippiSqr_32f_C1R(pSrcwBorderImage, stepBytesSrcwBorder, pSqrBorderImage, stepBytesSrcSqr, imageROIwBorderSize);
     //Compute Squared Integral Image
     status = ippiIntegral_32f_C1R(pSqrBorderImage, stepBytesSrcwBorder, pSqrIntegralImage, stepBytesSqrIntegral, imageROIwBorderSize);
-    //timer start
-    timerStart();
     
     this->noAdaptiveUSM.noAdaptiveUSM(pSrcwBorderImage, stepBytesSrcwBorder, pUSMImage, stepBytesUSM, imageROIwBorderSize, kernelStd, lambda, kernelLen);
     this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pUSMImage, stepBytesUSM, pSqrIntegralImage, stepBytesSqrIntegral, pFilteredImage, stepBytesFiltered, imageROISize, wSize, wSize_n, sigma_r);
-
-    double time = timerStop();
 
     //putting back everything
     ippiMulC_32f_C1IR(scaleFactor, pFilteredImage, stepBytesFiltered, imageROISize);
@@ -149,7 +147,6 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     ippiFree(pUSMImage);
     ippiFree(pFilteredImage);
 
-    cout << time << endl;
 
     return outputImage;
 }
