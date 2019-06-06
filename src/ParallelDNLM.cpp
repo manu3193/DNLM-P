@@ -88,9 +88,11 @@ int main(int argc, char* argv[]){
     status = ippInit();
     if(status != ippStsNoErr)
         cerr <<"Processor not identified"<<endl;
+    double start = omp_get_wtime();
     //Process image   
     outputImage = parallelDNLM->processImage(inputImage);
-
+    double elapsed = omp_get_wtime() - start;
+    cout <<"Elapsed time: "<<elapsed<<endl;
     //Write image to output file.
     imwrite(outputFile, outputImage);
 
@@ -164,7 +166,6 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     // Mirror border for full image filtering
     status = ippiCopyMirrorBorder_32f_C1R(pSrc32fImage, stepBytesSrc, imageROISize, pSrcwBorderImage, stepBytesSrcwBorder, imageROIwBorderSize, imageTopLeftOffset, imageTopLeftOffset);
     //timer start
-    double start = omp_get_wtime();
     //Applying USM Filter
     this->noAdaptiveUSM.noAdaptiveUSM(pSrcwBorderImage, stepBytesSrcwBorder, pUSMImage, stepBytesUSM, imageROIwBorderSize, kernelStd, lambda, kernelLen);
     //Gossens version doesnt works with normalized images
@@ -173,7 +174,6 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     //Aplying DNLM filter
     this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pUSMImage, stepBytesUSM, pFilteredImage, stepBytesFiltered, imageROIwBorderSize, wSize, wSize_n, sigma_r);
     //Measure slapsed time
-    double elapsed = omp_get_wtime() - start;
     //Convert back to uchar, add offset to pointer to remove border
     ippiConvert_32f8u_C1R((Ipp32f*) (pFilteredImage + imageTopLeftOffset*stepBytesFiltered/sizeof(Ipp32f)+imageTopLeftOffset), stepBytesFiltered, pDstImage , outputImage.step[0], imageROISize, ippRndFinancial);
     //ippiConvert_32f8u_C1R(pUSMImage, stepBytesUSM, pDstImage , outputImage.step[0], imageROISize, ippRndFinancial);
@@ -184,7 +184,6 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     ippiFree(pUSMImage);
     ippiFree(pFilteredImage);
 
-    cout <<"Elapsed time: "<< elapsed << endl;
 
     return outputImage;
 }
