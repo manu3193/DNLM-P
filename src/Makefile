@@ -12,7 +12,7 @@ CFLAGS_DEBUG = -g -qopenmp -O3  -fma -align -finline-functions
 CFLAGS_KNL_DEBUG = -g -qopenmp -O3 -xMIC-AVX512  -fma -align -finline-functions 
 CFLAGS = -g -qopenmp -O3 -xCORE-AVX2 -fma -align -finline-functions 
 
-LIBS = -lippi_static -lippcv_static -lippcc_static -lipps_static -lippvm_static  -lippcore_static -lopencv_core -lopencv_highgui -lopencv_imgcodecs 
+LIBS = -lippi -lippcv -lippcc -lipps -lippvm  -lippcore -lopencv_core -lopencv_highgui -lopencv_imgcodecs 
 
 LDFLAGS =-g3 -Wall
 LDFLAGS_DEBUG =-g3 -Wall -qopt-report=5  -qopt-report-phase=loop,vec,cg -qopt-report-embed
