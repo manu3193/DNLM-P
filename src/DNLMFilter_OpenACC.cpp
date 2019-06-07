@@ -13,9 +13,9 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
     #pragma acc data deviceptr(pSrcBorder[(windowHeight+2*(windowRadius+neighborRadius))*(windowWidth+2*(windowRadius+neighborRadius))], pSqrIntegralImage[(windowHeight+2*(windowRadius+neighborRadius)+1)*(windowWidth+2*(windowRadius+neighborRadius)+1)], pDst[imageHeight*imageWidth]) create(pEuclDist[0:windowHeight*windowWidth], pWindowIJCorr[windowHeight*windowWidth]) 
     //#pragma acc data present(pSrcBorder[0:(imageWidth+windowRadius+neighborRadius)+stepBytesSrcBorder/sizeof(float)*(imageHeight+windowRadius+neighborRadius)],  pSqrIntegralImage[(windowHeight+2*(windowRadius+neighborRadius)+1)*(windowWidth+2*(windowRadius+neighborRadius)+1)], pDst[0:imageWidth+stepBytesDst/sizeof(float)*imageHeight]) create(pEuclDist[0:windowHeight*windowWidth], pWindowIJCorr[windowHeight*windowWidth])
     {
-        #pragma acc parallel 
+        #pragma acc parallel vector_length(32) 
         {   
-    	    #pragma acc loop collapse(2)  private(pEuclDist[0:windowHeight*windowWidth], pWindowIJCorr[0:windowHeight*windowWidth])   
+    	    #pragma acc loop  collapse(2) private(pEuclDist[0:windowHeight*windowWidth], pWindowIJCorr[0:windowHeight*windowWidth])   
             for(int j = 0; j < imageHeight; j++)
     	    {
                
@@ -37,7 +37,8 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
                     const float * restrict pNeighborhoodStartIJ = (float*) &pSrcBorder[indexNeighborIJBase + i + windowRadius];
                     
                     //Compute window correlation with IJ neighborhood
-                    #pragma acc loop collapse(2)
+                    //#pragma acc loop collapse(2)
+                    #pragma acc loop tile(21,21)
                     for(int row_w = 0; row_w < windowHeight; row_w++)
                     {
                         for(int col_w = 0; col_w < windowWidth; col_w++)
@@ -52,7 +53,7 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
                                 }
                             }
                         pWindowIJCorr[col_w + row_w * windowWidth] = neighborCorrSum;
-                        }
+                       }
                     }
                    
                     //#pragma acc loop
