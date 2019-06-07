@@ -38,7 +38,7 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
                     
                     //Compute window correlation with IJ neighborhood
                     //#pragma acc loop collapse(2)
-                    #pragma acc loop tile(21,21)
+                    #pragma acc loop collapse(2) //tile(21,21)
                     for(int row_w = 0; row_w < windowHeight; row_w++)
                     {
                         for(int col_w = 0; col_w < windowWidth; col_w++)
