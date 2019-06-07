@@ -92,7 +92,7 @@ int main(int argc, char* argv[]){
     //Process image   
     outputImage = parallelDNLM->processImage(inputImage);
     double elapsed = omp_get_wtime() - start;
-    cout <<"Elapsed time: "<<elapsed<<endl;
+    cout <<elapsed<<endl;
     //Write image to output file.
     imwrite(outputFile, outputImage);
 
@@ -152,7 +152,7 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     //Allocate memory for images
     pSrc32fImage = ippiMalloc_32f_C1(imageROISize.width, imageROISize.height, &stepBytesSrc); 
     pSrcwBorderImage = ippiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesSrcwBorder);
-    pUSMImage = ippiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesUSM);
+    //pUSMImage = ippiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesUSM);
     pFilteredImage = ippiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesFiltered);   
 
     //Set result image to 0
@@ -167,12 +167,12 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     status = ippiCopyMirrorBorder_32f_C1R(pSrc32fImage, stepBytesSrc, imageROISize, pSrcwBorderImage, stepBytesSrcwBorder, imageROIwBorderSize, imageTopLeftOffset, imageTopLeftOffset);
     //timer start
     //Applying USM Filter
-    this->noAdaptiveUSM.noAdaptiveUSM(pSrcwBorderImage, stepBytesSrcwBorder, pUSMImage, stepBytesUSM, imageROIwBorderSize, kernelStd, lambda, kernelLen);
+    //this->noAdaptiveUSM.noAdaptiveUSM(pSrcwBorderImage, stepBytesSrcwBorder, pUSMImage, stepBytesUSM, imageROIwBorderSize, kernelStd, lambda, kernelLen);
     //Gossens version doesnt works with normalized images
     //ippiMulC_32f_C1IR(scaleFactor, pSrcwBorderImage, stepBytesSrcwBorder, imageROIwBorderSize);
     //ippiMulC_32f_C1IR(scaleFactor, pUSMImage, stepBytesUSM, imageROIwBorderSize);
     //Aplying DNLM filter
-    this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pUSMImage, stepBytesUSM, pFilteredImage, stepBytesFiltered, imageROIwBorderSize, wSize, wSize_n, sigma_r);
+    this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pSrcwBorderImage, stepBytesSrcwBorder, pFilteredImage, stepBytesFiltered, imageROIwBorderSize, wSize, wSize_n, sigma_r);
     //Measure slapsed time
     //Convert back to uchar, add offset to pointer to remove border
     ippiConvert_32f8u_C1R((Ipp32f*) (pFilteredImage + imageTopLeftOffset*stepBytesFiltered/sizeof(Ipp32f)+imageTopLeftOffset), stepBytesFiltered, pDstImage , outputImage.step[0], imageROISize, ippRndFinancial);
@@ -181,7 +181,7 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     //Freeing memory
     ippiFree(pSrc32fImage);
     ippiFree(pSrcwBorderImage);
-    ippiFree(pUSMImage);
+    //ippiFree(pUSMImage);
     ippiFree(pFilteredImage);
 
 
