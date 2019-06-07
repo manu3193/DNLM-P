@@ -41,7 +41,7 @@ int main(int argc, char* argv[]){
     double start = omp_get_wtime();
     outputImage = parallelDNLM.processImage(inputImage);
     double elapsed = omp_get_wtime()-start;
-    cout << "Elapsed time: "<<elapsed<<endl;
+    cout << elapsed<<endl;
     //Write image to output file.
     imwrite(outputFile, outputImage);
 
@@ -80,7 +80,7 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     Ipp32f *pSrcwBorderImage __attribute__((aligned(64)));
     Ipp32f *pSqrBorderImage __attribute__((aligned(64)));
     Ipp32f *pSqrIntegralImage __attribute__((aligned(64)));
-    Ipp32f *pUSMImage __attribute__((aligned(64)));
+    //Ipp32f *pUSMImage __attribute__((aligned(64)));
     Ipp32f *pFilteredImage __attribute__((aligned(64)));
 
     //Variable to store image step size in bytes 
@@ -88,7 +88,7 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     int stepBytesSrcwBorder = 0;
     int stepBytesSrcSqr = 0;
     int stepBytesSqrIntegral = 0;
-    int stepBytesUSM = 0;
+    //int stepBytesUSM = 0;
     int stepBytesFiltered = 0;
 
     //Scale factors to normalize and denormalize 32f image
@@ -119,7 +119,7 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     pSrcwBorderImage = ippiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesSrcwBorder);
     pSqrBorderImage = ippiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesSrcSqr);
     pSqrIntegralImage = ippiMalloc_32f_C1(imageROIwBorderIISize.width, imageROIwBorderIISize.height, &stepBytesSqrIntegral);
-    pUSMImage = ippiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesUSM);
+    //pUSMImage = ippiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesUSM);
     pFilteredImage = ippiMalloc_32f_C1(imageROISize.width, imageROISize.height, &stepBytesFiltered);   
     
     //Convert input image to 32f format
@@ -134,8 +134,8 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     //Compute Squared Integral Image
     status = ippiIntegral_32f_C1R(pSqrBorderImage, stepBytesSrcwBorder, pSqrIntegralImage, stepBytesSqrIntegral, imageROIwBorderSize);
     
-    this->noAdaptiveUSM.noAdaptiveUSM(pSrcwBorderImage, stepBytesSrcwBorder, pUSMImage, stepBytesUSM, imageROIwBorderSize, kernelStd, lambda, kernelLen);
-    this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pUSMImage, stepBytesUSM, pSqrIntegralImage, stepBytesSqrIntegral, pFilteredImage, stepBytesFiltered, imageROISize, wSize, wSize_n, sigma_r);
+    //this->noAdaptiveUSM.noAdaptiveUSM(pSrcwBorderImage, stepBytesSrcwBorder, pUSMImage, stepBytesUSM, imageROIwBorderSize, kernelStd, lambda, kernelLen);
+    this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pSrcwBorderImage, stepBytesSrcwBorder, pSqrIntegralImage, stepBytesSqrIntegral, pFilteredImage, stepBytesFiltered, imageROISize, wSize, wSize_n, sigma_r);
 
     //putting back everything
     ippiMulC_32f_C1IR(scaleFactor, pFilteredImage, stepBytesFiltered, imageROISize);
@@ -144,7 +144,7 @@ Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float 
     //Freeing memory
     ippiFree(pSrc32fImage);
     ippiFree(pSrcwBorderImage);
-    ippiFree(pUSMImage);
+    //ippiFree(pUSMImage);
     ippiFree(pFilteredImage);
 
 
