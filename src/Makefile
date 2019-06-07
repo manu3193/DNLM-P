@@ -6,7 +6,7 @@ CC = nvcc
 PGI = pgc++
 # define any compile-time flags
 CFLAGS_DEBUG = -g -G -ccbin=pgc++ -Xcompiler "-g -std=c++11 -Minfo=accel  -ta=tesla:nordc -ta=tesla:cc35 -O0 -Mcuda " -cudart static -O0
-CFLAGS = -ccbin=pgc++ -Xcompiler " -std=c++11 -Minfo=accel  -ta=tesla:nordc -ta=tesla:cc35 -fast -Mcuda " -cudart static -use_fast_math
+CFLAGS = -ccbin=pgc++ -Xcompiler " -std=c++11 -Minfo=accel  -ta=tesla:nordc -ta=tesla:cc35 -fast -Mcuda -O3" -O3 -cudart static -use_fast_math
 CFALGS_MC = -g -std=c++11 -Minfo=accel -acc -ta=multicore -O0
 LIBS = -lnppc_static -lnppial_static -lnppitc_static -lnppidei_static -lnppif_static -lnppisu_static -lnppist_static -lnpps_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
 LIBS_MC = -lopencv_core -lopencv_highgui -lopencv_imgcodecs
