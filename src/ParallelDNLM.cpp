@@ -45,7 +45,7 @@ int main(int argc, char* argv[]){
     //regex floatRegex = regex("[+]?([0-9]*[.])?[0-9]+");
 
     if (argc == 2){
-        cout << "Using default parameters W=21x21, W_n=7x7, sigma_r=10, lambda=1, USM_len=16,USM_std=3" << endl;
+        //cout << "Using default parameters W=21x21, W_n=7x7, sigma_r=10, lambda=1, USM_len=16,USM_std=3" << endl;
         parallelDNLM = new ParallelDNLM();
     } 
     //Check input arguments
@@ -80,7 +80,7 @@ int main(int argc, char* argv[]){
     //Process image 
     Mat outputImage  = parallelDNLM->processImage(inputImage);
     double elapsed = omp_get_wtime() - start;
-    cout << "Elapsed time: "<< elapsed<<endl;
+    cout<< elapsed<<endl;
     //Write image to output file.
     imwrite(outputFile, outputImage);
     //Release object memory
@@ -118,7 +118,7 @@ Mat ParallelDNLM::filterDNLM(const Mat inputImage, int wSize, int wSize_n, float
     int stepBytesSrcwBorder8u = 0;
     int stepBytesSrcwBorder32f = 0;
     int stepBytesSrc8u = 0;
-    int stepBytesSqrIntegral64f = 0;
+    size_t stepBytesSqrIntegral64f = 0;
     int stepBytesFiltered32f = 0;
     int stepBytesFiltered8u = 0;
     int stepBytesIntegral = 0;
@@ -143,7 +143,7 @@ Mat ParallelDNLM::filterDNLM(const Mat inputImage, int wSize, int wSize_n, float
     imageROIwBorderSize = {imageROISize.width + 2*imageTopLeftOffset, imageROISize.height + 2*imageTopLeftOffset};     
     integralImageROISize = {imageROIwBorderSize.width+1, imageROIwBorderSize.height+1};
     //Allocate memory for gpu images
-    cudaStatus = cudaMallocPitch(&pSqrIntegralImage64f, (size_t*) &stepBytesSqrIntegral64f, integralImageROISize.width * sizeof(Npp64f), integralImageROISize.height);
+    cudaStatus = cudaMallocPitch(&pSqrIntegralImage64f, &stepBytesSqrIntegral64f, integralImageROISize.width * sizeof(Npp64f), integralImageROISize.height);
     pSrcImage8u = nppiMalloc_8u_C1(imageROISize.width, imageROISize.height, &stepBytesSrc8u);
     pSrcwBorderImage32f = nppiMalloc_32f_C1(imageROIwBorderSize.width, imageROIwBorderSize.height, &stepBytesSrcwBorder32f); 
     pIntegralImage32f = nppiMalloc_32f_C1(integralImageROISize.width, integralImageROISize.height, &stepBytesIntegral);
@@ -158,7 +158,7 @@ Mat ParallelDNLM::filterDNLM(const Mat inputImage, int wSize, int wSize_n, float
     // Mirror border for full image filtering
     status = nppiCopyWrapBorder_8u_C1R(pSrcImage8u, stepBytesSrc8u, imageROISize, pSrcwBorderImage8u, stepBytesSrcwBorder8u, imageROIwBorderSize, imageTopLeftOffset, imageTopLeftOffset);
     // Compute Sqr Integral Image
-    status = nppiSqrIntegral_8u32f64f_C1R(pSrcwBorderImage8u, stepBytesSrcwBorder8u, pIntegralImage32f, stepBytesIntegral, pSqrIntegralImage64f, stepBytesSqrIntegral64f, imageROIwBorderSize, 0, 0);
+    status = nppiSqrIntegral_8u32f64f_C1R(pSrcwBorderImage8u, stepBytesSrcwBorder8u, pIntegralImage32f, stepBytesIntegral, pSqrIntegralImage64f, (int) stepBytesSqrIntegral64f, imageROIwBorderSize, 0, 0);
     //Convert input image to 32f format
     status = nppiConvert_8u32f_C1R(pSrcwBorderImage8u, stepBytesSrcwBorder8u, pSrcwBorderImage32f, stepBytesSrcwBorder32f, imageROIwBorderSize);
     // Normalize input
