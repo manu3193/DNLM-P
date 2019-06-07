@@ -8,7 +8,7 @@ PGI = pgc++
 CFLAGS_DEBUG = -g -G -ccbin=pgc++ -Xcompiler "-g -std=c++11 -Minfo=accel  -ta=tesla:nordc -ta=tesla:cc35 -O0 -Mcuda " -cudart static -O0
 CFLAGS = -ccbin=pgc++ -Xcompiler " -std=c++11 -Minfo=accel  -ta=tesla:nordc -ta=tesla:cc35 -fast -Mcuda " -cudart static -use_fast_math
 CFALGS_MC = -g -std=c++11 -Minfo=accel -acc -ta=multicore -O0
-LIBS = -lnppc -lnppial -lnppitc -lnppidei -lnppif -lnppisu -lnppist -lnpps -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
+LIBS = -lnppc_static -lnppial_static -lnppitc_static -lnppidei_static -lnppif_static -lnppisu_static -lnppist_static -lnpps_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
 LIBS_MC = -lopencv_core -lopencv_highgui -lopencv_imgcodecs
 #LIBS = -lnppc_static -lnppi_static -lnpps_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
 LDFLAGS = -L$(CUDA_HOME)/lib64 -L/opt/tools/opencv-3/lib
