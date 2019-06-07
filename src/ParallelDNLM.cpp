@@ -46,7 +46,7 @@ int main(int argc, char* argv[]){
     //regex floatRegex = regex("[+]?([0-9]*[.])?[0-9]+");
 
     if (argc == 2){
-        cout << "Using default parameters W=21x21, W_n=7x7, sigma_r=10, lambda=1, USM_len=16,USM_std=3" << endl;
+    //    cout << "Using default parameters W=21x21, W_n=7x7, sigma_r=10, lambda=1, USM_len=16,USM_std=3" << endl;
         parallelDNLM = new ParallelDNLM();
     } 
     //Check input arguments
@@ -81,7 +81,7 @@ int main(int argc, char* argv[]){
     //Process image 
     Mat outputImage  = parallelDNLM->processImage(inputImage);
     double elapsed = omp_get_wtime() - start;
-    cout << "Elapsed time: "<<elapsed<<endl;
+    cout <<elapsed<<endl;
     //Write image to output file.
     imwrite(outputFile, outputImage);
     //Release object memory
@@ -113,7 +113,7 @@ Mat ParallelDNLM::filterDNLM(const Mat inputImage, int wSize, int wSize_n, float
     NppStatus status =  NPP_NO_ERROR;
     
     cudaStatus = cudaGetDevice(&device);
-    if (cudaStatus == cudaSuccess)
+    /*if (cudaStatus == cudaSuccess)
     {
         cudaDeviceProp prop;
         cudaGetDeviceProperties(&prop, device);
@@ -123,7 +123,7 @@ Mat ParallelDNLM::filterDNLM(const Mat inputImage, int wSize, int wSize_n, float
         cout <<"  Memory Bus Width (bits): "<<prop.memoryBusWidth<<endl;
         cout <<"  Peak Memory Bandwidth (GB/s): "<<2.0*prop.memoryClockRate*(prop.memoryBusWidth/8)/1.0e6 <<endl;
         cout <<"  Compute Capability: "<<prop.major<<"."<<prop.minor<<endl;
-    }    
+    } */   
     //Pointers to NPP type images 
     Npp32f *pSrcImage32f = NULL, *pSrcwBorderImage = NULL, *pFilteredImage32f = NULL;
     Npp8u *pSrcImage8u = NULL, *pFilteredImage8u = NULL;
@@ -191,7 +191,7 @@ Mat ParallelDNLM::filterDNLM(const Mat inputImage, int wSize, int wSize_n, float
                  stepBytesFiltered8u, imageROISize.width, imageROISize.height, cudaMemcpyDeviceToHost);
     if (cudaStatus !=cudaSuccess) cout << " error copying back to host" << cudaStatus << endl;
     //cudaEventSynchronize(stop);
-    float elapsed = 0;
+    //float elapsed = 0;
     //cudaEventElapsedTime(&elapsed, start, stop);
     //Freeing memory
     nppiFree(pSrcImage32f); 
