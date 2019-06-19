@@ -1,14 +1,14 @@
-#CUDA_HOME=/opt/tools/cuda-10.1.105
+#CUDA_HOME=/opt/tools/cuda-10.1.105/
 CUDA_HOME = /opt/tools/cuda-9.0.176
 #CUDA_HOME = /opt/tools/cuda-8.0
 # define the C compiler to use
 CC = nvcc 
 PGI = pgc++
 # define any compile-time flags
-CFLAGS_DEBUG = -g -G -ccbin=pgc++ -Xcompiler "-g -std=c++11 -Minfo=accel  -ta=tesla:nordc -ta=tesla:cc35 -O0 -Mcuda " -cudart static -O0
-CFLAGS = -ccbin=pgc++ -Xcompiler  " -std=c++11 -Minfo=accel  -ta=tesla:nordc -ta=tesla:cc35 -fast -Mcuda "  -cudart static -use_fast_math -O3
-CFALGS_MC = -g -std=c++11 -Minfo=accel -acc -ta=multicore -O0
-LIBS = -lnppc -lnppial_static -lnppitc_static -lnppidei_static -lnppif_static -lnppisu_static -lnppist_static -lnpps_static -lnppc_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
+CFLAGS_DEBUG = -g -G -ccbin=pgc++ -Xcompiler "-acc -g -std=c++11 -Minfo=accel  -ta=tesla:nordc -ta=tesla:cc35 -ta=tesla -Mcuda -Minline -Mvect " -cudart static -O0 -DDEBUG
+CFLAGS = -ccbin=pgc++ -Xcompiler  "-acc -std=c++11 -Minfo=accel  -ta=tesla:cc35 -ta=tesla:nordc -fast -Mcuda -Minline -Mvect -O3"  -cudart static -use_fast_math -O3
+CFALGS_MC = -g -std=c++11 -Minfo=all -acc -ta=multicore -O0
+LIBS = -lnppial_static -lnppitc_static -lnppidei_static -lnppif_static -lnppisu_static -lnppist_static -lnpps_static -lnppc_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
 LIBS_MC = -lopencv_core -lopencv_highgui -lopencv_imgcodecs
 #LIBS = -lnppc_static -lnppi_static -lnpps_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
 LDFLAGS = -L$(CUDA_HOME)/lib64 -L/opt/tools/opencv-3/lib
