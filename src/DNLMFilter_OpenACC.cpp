@@ -44,7 +44,7 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
                         for(int col_w = 0; col_w < windowWidth; col_w++)
                         {
                             float neighborCorrSum = 0;
-                            #pragma acc loop vector reduction(+:neighborCorrSum)
+                            #pragma acc loop vector collapse(2) reduction(+:neighborCorrSum)
                             for(int row_n = 0; row_n < neighborHeight; row_n++)
                             {
                                 for(int col_n = 0; col_n < neighborWidth; col_n++)
@@ -72,7 +72,7 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
                                                             - pSqrIntegralImage[indexIINeighborMNBase + (i + m  + neighborWidth)]
                                                             - pSqrIntegralImage[indexIINeighborMNBaseWOffset + (i + m )];
                             //#pragma acc loop seq
-                            pEuclDist[n*windowWidth + m]= sqrSumIJNeighborhood + sqrSumMNNeighborhood -2*pWindowIJCorr[n*windowWidth + m];
+                            pEuclDist[n*windowWidth + m]= 255.0*sqrSumIJNeighborhood + 255.0*sqrSumMNNeighborhood -2*pWindowIJCorr[n*windowWidth + m];
                         }
                     }
 
