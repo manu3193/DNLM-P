@@ -42,7 +42,7 @@ int DNLMFilter::dnlmFilterBW(const Npp32f* pSrcBorder, int stepBytesSrcBorder, c
     pWeightsAcumm = nppiMalloc_32f_C1(imageSize.width, imageSize.height, &stepBytesWeightsAcumm);
     
     //Set buffer to 0
-    nppiSet_32f_C1R((Npp32f) 0.0f, pWeightsAcumm, stepBytesWeightsAcumm, imageSize);
+    //OLD nppiSet_32f_C1R((Npp32f) 0.0f, pWeightsAcumm, stepBytesWeightsAcumm, imageSize);
 
     Npp32f *pEuclDist __attribute__((aligned(64)));
     Npp32f *pSumSqrDiff __attribute__((aligned(64)));
@@ -57,7 +57,7 @@ int DNLMFilter::dnlmFilterBW(const Npp32f* pSrcBorder, int stepBytesSrcBorder, c
     //Allocate one big chunk of memory to store thread's private weights and dst buffers
     pChunkMem = nppiMalloc_32f_C1(imageSize.width, 2*imageSize.height, &stepBytesThreadWeights);
     //Init buffer to 0
-    nppiSet_32f_C1R((Npp32f) 0.0f, pChunkMem, stepBytesThreadWeights, {imageSize.width, 2*imageSize.height});
+    //OLD nppiSet_32f_C1R((Npp32f) 0.0f, pChunkMem, stepBytesThreadWeights, {imageSize.width, 2*imageSize.height});
     //Perform pointer arithmetics
     pThreadWeightsAcumm = pChunkMem;
     pThreadDst = (Npp32f*) &pChunkMem[imageSize.height * stepBytesThreadWeights/sizeof(Npp32f)];
@@ -69,7 +69,6 @@ int DNLMFilter::dnlmFilterBW(const Npp32f* pSrcBorder, int stepBytesSrcBorder, c
     //For each distance between window patches
     for (int dn = 0; dn < wHalfLen+1; ++dn)
     {   
-        //#pragma omp parallel for shared(pWeightsAcumm,pDst) private(dn,pBuffer,pEuclDist,pSumSqrDiff,pTmp)
         for (int dm = 0; dm < wHalfLen+1; ++dm)
         {
             //Exploit symmetry
@@ -99,7 +98,7 @@ int DNLMFilter::dnlmFilterBW(const Npp32f* pSrcBorder, int stepBytesSrcBorder, c
                 pTmp2 = &pChunkMem2[3 * euclROISize.height * stepBytesEuclDist/sizeof(Npp32f)];
                 stepSumSqrDiff = stepBytesTmp = stepBytesEuclDist;
                 //The ippiFilterBorder function operates as a inplace function, thus it is necessary to initialize
-                nppiSet_32f_C1R((Npp32f) 0.0f, pEuclDist, stepBytesEuclDist, euclROISize);
+                //OLD nppiSet_32f_C1R((Npp32f) 0.0f, pEuclDist, stepBytesEuclDist, euclROISize);
                   
                 //Compute squared diference 
                 nppiSub_32f_C1R((Npp32f*) (pSrcBorder +indexSrcImageBaseWOffset + (m_min + dm)), stepBytesSrcBorder, 
