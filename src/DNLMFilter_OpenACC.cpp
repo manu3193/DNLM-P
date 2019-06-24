@@ -23,7 +23,7 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, float* pDst, 
           int starty = std::max(block * block_size, 0);
           int endy   = std::min(starty + block_size, imageHeight);
 
-          #pragma acc parallel async(block%3+1) vector_length(64) num_workers(1)  
+          #pragma acc parallel async(block%3+1) vector_length(128) num_workers(1)  
           {   
               //#pragma acc loop collapse(2) private(pEuclDist[0:windowHeight*windowWidth])  
               #pragma acc loop tile(*,*) gang vector
