@@ -9,7 +9,7 @@ CUDA_HOME = /opt/tools/cuda-9.0.176
 CC = nvcc 
 # define any compile-time flags
 CFLAGS_DEBUG = -g -O3 -cudart static -gencode arch=compute_35,code=sm_35 -use_fast_math
-CFLAGS = -O3 -Xcompiler -cudart static -gencode arch=compute_35,code=sm_35 -use_fast_math
+CFLAGS = -O3  -cudart static -gencode arch=compute_35,code=sm_35 -use_fast_math
 
 LIBS = -lnppc_static -lnppial_static -lnppitc_static -lnppidei_static -lnppif_static -lnppisu_static -lnpps_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
 #LIBS = -lnppc_static -lnppi_static -lnpps_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
