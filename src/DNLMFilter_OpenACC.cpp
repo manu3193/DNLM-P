@@ -16,7 +16,7 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
     //Nivel de paralelismo gangs collapse
     #pragma acc data deviceptr(pSrcBorder[(windowHeight+2*(windowRadius+neighborRadius))*(windowWidth+2*(windowRadius+neighborRadius))], pSqrIntegralImage[(windowHeight+2*(windowRadius+neighborRadius)+1)*(windowWidth+2*(windowRadius+neighborRadius)+1)], pDst[imageHeight*imageWidth])
     {
-        #pragma acc parallel  
+        #pragma acc parallel vector_length(256) num_workers(1) 
         {
     	    #pragma acc loop gang collapse(2) private(pEuclDist[0:windowHeight*windowWidth], pWindowIJCorr[0:windowHeight*windowWidth])     
             for(int j = 0; j < imageHeight; j++)
