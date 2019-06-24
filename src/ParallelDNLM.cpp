@@ -13,7 +13,7 @@ ParallelDNLM::ParallelDNLM(){
     this->wSize_n = 7;
     this->kernelStd = 3;
     this->kernelLen = 16;
-    this->sigma_r = 7; 
+    this->sigma_r = 0.039; 
     this->lambda = 1;
 }
 
@@ -171,7 +171,7 @@ Mat ParallelDNLM::filterDNLM(const Mat inputImage, int wSize, int wSize_n, float
     //Convert input image to 32f format
     status = nppiConvert_8u32f_C1R(pSrcImage8u, stepBytesSrc8u, pSrcImage32f, stepBytesSrc32f, imageROISize);
     //Normalize converted image
-    //status = nppiMulC_32f_C1IR(normFactor, pSrc32fImage, stepBytesSrc, imageROISize);
+    status = nppiMulC_32f_C1IR(normFactor, pSrcImage32f, stepBytesSrc32f, imageROISize);
 
     // Mirror border for full image filtering
     status = nppiCopyWrapBorder_32f_C1R(pSrcImage32f, stepBytesSrc32f, imageROISize, pSrcwBorderImage, stepBytesSrcwBorder, imageROIwBorderSize, imageTopLeftOffset, imageTopLeftOffset);
@@ -183,7 +183,8 @@ Mat ParallelDNLM::filterDNLM(const Mat inputImage, int wSize, int wSize_n, float
     DNLM_OpenACC(pSrcwBorderImage, stepBytesSrcwBorder, pFilteredImage32f, stepBytesFiltered32f, windowRadius, neighborRadius, imageROISize.width, imageROISize.height, wSize , wSize, wSize_n, wSize_n, sigma_r);
 
     //cudaEventRecord(stop);
-    
+    //Normalize converted image
+    status = nppiMulC_32f_C1IR(scaleFactor, pFilteredImage32f, stepBytesFiltered32f, imageROISize); 
     //Convert back to uchar, add offset to pointer to remove border
     status = nppiConvert_32f8u_C1R(pFilteredImage32f, stepBytesFiltered32f, pFilteredImage8u, stepBytesFiltered8u, imageROISize, NPP_RND_FINANCIAL);
     if (status !=0) cout << " error converting" << status << endl;
