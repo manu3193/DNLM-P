@@ -25,7 +25,9 @@ int DNLMFilter::dnlmFilter(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, int
 
 //Implements dnlm filter for grayscale images.
 int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, const Ipp32f* pUSMImage, int stepBytesUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
-    
+
+    __itt_resume(); //Intel Advisor starts recording performance data 
+
     //Compute border offset for border replicated image
     int windowTopLeftOffset = floor(w_n/2);
     int imageTopLeftOffset = floor(w/2) + windowTopLeftOffset;
@@ -87,7 +89,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
         ippiFree(pEuclDist);
     }
 
-    
+    __itt_pause();    
 
     return 1;
     
