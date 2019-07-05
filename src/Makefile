@@ -14,11 +14,11 @@ CFLAGS = -g -qopenmp -O3 -xCORE-AVX2  -fma -align -finline-functions
 
 LIBS = -lippi -lippcv -lippcc -lipps -lippvm  -lippcore -lopencv_core -lopencv_highgui -lopencv_imgcodecs 
 
-LDFLAGS =-g3 -Wall
+LDFLAGS =-g3 -Wall -L/opt/intel/advisor/lib64
 LDFLAGS_DEBUG =-g3 -Wall -qopt-report=5  -qopt-report-phase=loop,vec,cg -qopt-report-embed
 # define any directories containing header files other than /usr/include
 #
-INCLUDES= -I../include -I$(IPPROOT)/include 
+INCLUDES= -I../include -I$(IPPROOT)/include -I/opt/intel/advisor/include
 
 
 # define the C source files

@@ -25,6 +25,9 @@ int DNLMFilter::dnlmFilter(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, int
 
 //Implements dnlm filter for grayscale images.
 int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, const Ipp32f* pUSMImage, int stepBytesUSM, const Ipp32f* pSqrIntegralImage, int stepBytesSqrIntegral, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
+
+    __itt_resume(); //Intel Advisor starts recording performance data   
+
     //Configuration for the correlation primitive
     IppEnum corrAlgCfg = (IppEnum) (ippAlgFFT | ippiNormNone | ippiROIValid);
     //Compute border offset for border replicated image
@@ -126,7 +129,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
 
     
 
-
+    __itt_pause(); // Intel Advisor stops recording performance data
 
     return 1;
     
