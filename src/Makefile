@@ -12,13 +12,13 @@ CFLAGS_DEBUG = -g -std=c++11 -qopenmp -O3  -fma -align -finline-functions
 CFLAGS_KNL_DEBUG = -g -std=c++11 -qopenmp -O3 -xMIC-AVX512  -fma -align -finline-functions 
 CFLAGS = -g  -qopenmp -O3  -xCORE-AVX2 -fma -align -finline-functions 
 
-LIBS = -lippi -lippcv -lippcc -lipps -lippvm  -lippcore  -lopencv_core -lopencv_highgui -lopencv_imgcodecs
+LIBS = -lippi -lippcv -lippcc -lipps -lippvm  -lippcore  -lopencv_core -lopencv_highgui -lopencv_imgcodecs -littnotify
 
-LDFLAGS =-g3 -Wall -L$(IPP_LIBS_PATH) -L/opt/tools/opencv-3/lib
+LDFLAGS =-g3 -Wall -L$(IPP_LIBS_PATH) -L/opt/tools/opencv-3/lib -L/opt/intel/advisor/lib64
 LDFLAGS_DEBUG =-g3 -Wall -L$IPP_LIBS_PATH -qopt-report=5  -qopt-report-phase=loop,vec,cg -qopt-report-embed
 # define any directories containing header files other than /usr/include
 #
-INCLUDES= -I../include -I$(IPPROOT)/include -I/opt/tools/opencv-3/include 
+INCLUDES= -I../include -I$(IPPROOT)/include -I/opt/tools/opencv-3/include -I/opt/intel/advisor/include 
 
 
 # define the C source files

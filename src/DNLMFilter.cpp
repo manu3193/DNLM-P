@@ -48,6 +48,8 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
 
     //Get buffer size for moving average filter
     ippiFilterBoxBorderGetBufferSize(convROISize, nROISize, ipp32f, 1, &bufSize);
+    
+    __itt_resume(); //Intel Advisor starts recording performance data
 
     #pragma omp parallel shared(pWeightsAcumm,pDst,pUSMImage,pSrcBorder) //private(dn,dm,pBuffer,pEuclDist,pSumSqrDiff,pTmp)
     {
@@ -167,6 +169,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
     //Normalize
     ippiDiv_32f_C1IR(pWeightsAcumm, stepBytesWeightsAcumm, pDst, stepBytesDst, imageSize);
 
+    __itt_resume(); //Intel Advisor starts recording performance data   
 
     ippiFree(pWeightsAcumm);
 

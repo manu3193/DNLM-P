@@ -8,6 +8,8 @@
 #include <ipp.h>
 #include <ippcv.h>
 
+#include "ittnotify.h"
+
 using namespace cv;
 using namespace std;
 
