@@ -26,8 +26,6 @@ int DNLMFilter::dnlmFilter(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, int
 //Implements dnlm filter for grayscale images.
 int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, const Ipp32f* pUSMImage, int stepBytesUSM, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
 
-    __itt_resume(); //Intel Advisor starts recording performance data 
-
     //Compute border offset for border replicated image
     int windowTopLeftOffset = floor(w_n/2);
     int imageTopLeftOffset = floor(w/2) + windowTopLeftOffset;
@@ -48,6 +46,9 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
 
         //Allocate memory for sqrtDist matrix
         pEuclDist = ippiMalloc_32f_C1(windowSize.width, windowSize.height, &stepBytesEuclDist);
+
+        __itt_resume(); //Intel Advisor starts recording performance data
+        __SSC_MARK(0xFACE);
 
         #pragma omp for collapse(2)
         for (int j = 0; j < imageSize.height; ++j)
@@ -86,6 +87,10 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                 pDst[indexPdstBase+i] = (Ipp32f) (filterResult/ sumExpTerm);
             }
         }
+
+        __SSC_MARK(0xDEAD);
+        __itt_pause();        
+
         ippiFree(pEuclDist);
     }
 
