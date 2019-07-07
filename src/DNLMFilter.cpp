@@ -26,8 +26,6 @@ int DNLMFilter::dnlmFilter(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, int
 //Implements dnlm filter for grayscale images.
 int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, const Ipp32f* pUSMImage, int stepBytesUSM, const Ipp32f* pSqrIntegralImage, int stepBytesSqrIntegral, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
 
-    __itt_resume(); //Intel Advisor starts recording performance data   
-
     //Configuration for the correlation primitive
     IppEnum corrAlgCfg = (IppEnum) (ippAlgFFT | ippiNormNone | ippiROIValid);
     //Compute border offset for border replicated image
@@ -64,6 +62,9 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
         stepBytesWindowIJCorr = stepBytesEuclDist;
         //Allocate working buffer
         pBuffer = ippsMalloc_8u( bufSize );
+
+        __itt_resume(); //Intel Advisor starts recording performance data
+        __SSC_MARK(0xFACE);    
 
         #pragma omp for collapse(2)
         for (int j = 0; j < imageSize.height; ++j)
@@ -122,14 +123,13 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                 pDst[indexPdstBase+i] = (Ipp32f) (filterResult/ sumExpTerm);
             }
         }
+
+        __itt_pause(); // Intel Advisor stops recording performance data
+        __SSC_MARK(0xDEAD);
+
         ippiFree(pChunkMem);
         ippsFree(pBuffer);
     }
-
-
-    
-
-    __itt_pause(); // Intel Advisor stops recording performance data
 
     return 1;
     
