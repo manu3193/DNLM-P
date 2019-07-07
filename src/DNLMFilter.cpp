@@ -157,6 +157,9 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
             ippiAdd_32f_C1IR(pThreadDst, stepBytesThreadDst, pDst, stepBytesDst, imageSize);
         }
 
+        __SSC_MARK(0xDEAD);
+        __itt_resume(); //Intel Advisor starts recording performance data 
+
         //Free resources
         ippiFree(pChunkMem);
         ippsFree(pBuffer);
@@ -168,9 +171,6 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
     ippiThreshold_32f_C1IR(pWeightsAcumm, stepBytesWeightsAcumm, imageSize, 1e-20f,ippCmpLess);
     //Normalize
     ippiDiv_32f_C1IR(pWeightsAcumm, stepBytesWeightsAcumm, pDst, stepBytesDst, imageSize);
-
-    __itt_resume(); //Intel Advisor starts recording performance data   
-    __SSC_MARK(0xDEAD);
 
     ippiFree(pWeightsAcumm);
 
