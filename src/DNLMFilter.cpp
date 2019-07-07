@@ -76,7 +76,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
         stepBytesThreadDst = stepBytesThreadWeights;
         
          __itt_resume(); //Intel Advisor starts recording performance data
-        __SSC_MARK(0xDEAD);
+        __SSC_MARK(0xFACE);
 
         //For each distance between window patches
         #pragma omp for collapse(2) schedule(runtime)
