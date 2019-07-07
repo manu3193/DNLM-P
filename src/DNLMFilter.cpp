@@ -124,8 +124,8 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
             }
         }
 
-        __itt_pause(); // Intel Advisor stops recording performance data
         __SSC_MARK(0xDEAD);
+        __itt_pause(); // Intel Advisor stops recording performance data
 
         ippiFree(pChunkMem);
         ippsFree(pBuffer);
