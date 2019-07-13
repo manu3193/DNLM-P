@@ -65,7 +65,7 @@ int DNLMFilter::dnlmFilterBW(const Npp32f* pSrcBorder, int stepBytesSrcBorder, c
     
     //Allocate buffers memory
     pChunkMem2 = nppiMalloc_32f_C1(imageSize.width, 4*imageSize.height, &stepBytesEuclDist);
-
+    cudaProfilerStart();
     //For each distance between window patches
     for (int dn = 0; dn < wHalfLen+1; ++dn)
     {   
@@ -145,7 +145,7 @@ int DNLMFilter::dnlmFilterBW(const Npp32f* pSrcBorder, int stepBytesSrcBorder, c
     nppiThreshold_32f_C1IR(pWeightsAcumm, stepBytesWeightsAcumm, imageSize, 1e-20f,NPP_CMP_LESS);
     //Normalize
     nppiDiv_32f_C1IR(pWeightsAcumm, stepBytesWeightsAcumm, pDst, stepBytesDst, imageSize);
-
+    cudaProfilerStop();
     //Free resources
     nppiFree(pChunkMem);
     nppiFree(pChunkMem2);
