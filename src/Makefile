@@ -3,8 +3,8 @@
 # 'make clean'  removes all .o and executable files
 #
 
-CUDA_HOME = /opt/tools/cuda-9.0.176
-#CUDA_HOME = /opt/tools/cuda-8.0
+#CUDA_HOME = /opt/tools/cuda-9.0.176
+CUDA_HOME = /opt/tools/cuda-10.1.105
 # define the C compiler to use
 CC = nvcc 
 # define any compile-time flags
