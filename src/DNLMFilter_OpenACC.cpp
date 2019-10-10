@@ -38,7 +38,7 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
                     
                     //Compute window correlation with IJ neighborhood
                     //#pragma acc loop collapse(2)
-                    #pragma acc loop collapse(2) //tile(21,21)
+                    #pragma acc loop //tile(21,21)
                     for(int row_w = 0; row_w < windowHeight; row_w++)
                     {
                         for(int col_w = 0; col_w < windowWidth; col_w++)
@@ -72,7 +72,7 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
                                                             - pSqrIntegralImage[indexIINeighborMNBase + (i + m  + neighborWidth)]
                                                             - pSqrIntegralImage[indexIINeighborMNBaseWOffset + (i + m )];
                             //#pragma acc loop seq
-                            pEuclDist[n*windowWidth + m]= 255.0*sqrSumIJNeighborhood + 255.0*sqrSumMNNeighborhood -2*pWindowIJCorr[n*windowWidth + m];
+                            pEuclDist[n*windowWidth + m]= sqrSumIJNeighborhood + sqrSumMNNeighborhood -2*pWindowIJCorr[n*windowWidth + m];
                         }
                     }
 
@@ -82,7 +82,7 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
                     {
                         for(int col = 0; col < windowWidth; col++)
                         {
-                            pEuclDist[col + row * windowWidth] = pEuclDist[col + row * windowWidth] *  -1/(2*(sigma_r * sigma_r));
+                            pEuclDist[col + row * windowWidth] = pEuclDist[col + row * windowWidth] *  -1/(sigma_r * sigma_r);
                             pEuclDist[col + row * windowWidth] = expf(pEuclDist[col + row * windowWidth]);
                             sumExpTerm += pEuclDist[col + row * windowWidth];
                         }
@@ -95,8 +95,7 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
                     {
                         for(int col = 0; col < windowWidth; col++)
                         {
-                            pEuclDist[col + row * windowWidth] = pEuclDist[col + row * windowWidth] * pWindowStart[(col+neighborRadius) + (row+neighborRadius) * stepBytesSrcBorder/sizeof(float)];
-                            filterResult += pEuclDist[col + row * windowWidth];                    
+                            filterResult += pEuclDist[col + row * windowWidth] * pWindowStart[(col+neighborRadius) + (row+neighborRadius) * stepBytesSrcBorder/sizeof(float)];
                         }
                     }
                     pDst[indexPdstBase + i] = filterResult/sumExpTerm;
