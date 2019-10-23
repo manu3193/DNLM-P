@@ -8,6 +8,7 @@
 //#include <NoAdaptiveUSM.hpp>
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <cuda_profiler_api.h>
 #include <npp.h>
 #include <omp.h>
 #include <opencv2/opencv.hpp>

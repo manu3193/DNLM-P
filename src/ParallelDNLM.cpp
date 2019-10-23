@@ -12,7 +12,7 @@ ParallelDNLM::ParallelDNLM(){
     this->wSize_n = 7;
     this->kernelStd = 3;
     this->kernelLen = 16;
-    this->sigma_r = 7; 
+    this->sigma_r = 0.6; 
     this->lambda = 1;
 }
 
@@ -162,24 +162,17 @@ Mat ParallelDNLM::filterDNLM(const Mat inputImage, int wSize, int wSize_n, float
     //Convert input image to 32f format
     status = nppiConvert_8u32f_C1R(pSrcwBorderImage8u, stepBytesSrcwBorder8u, pSrcwBorderImage32f, stepBytesSrcwBorder32f, imageROIwBorderSize);
     // Normalize input
-    //status = nppiMulC_32f_C1IR(normFactor32f, pSrcwBorderImage32f, stepBytesSrcwBorder32f, imageROIwBorderSize);
+    status = nppiMulC_32f_C1IR(normFactor32f, pSrcwBorderImage32f, stepBytesSrcwBorder32f, imageROIwBorderSize);
     status = nppsConvert_64f32f(pSqrIntegralImage64f, pIntegralImage32f, stepBytesSqrIntegral64f/sizeof(Npp64f));
     status = nppiMulC_32f_C1IR(normFactor32f, pIntegralImage32f, stepBytesIntegral, integralImageROISize);
     //timer start
-    //cudaEventRecord(start); 
-    //Applying USM Filter
-    //OLD status =nppiFilterUnsharpBorder_32f_C1R(pSrcwBorderImage, stepBytesSrcwBorder, {imageTopLeftOffset,imageTopLeftOffset}, pUSMImage, stepBytesUSM, {imageROIwBorderSize.width, imageROIwBorderSize.height}, usmRadius, kernelStd, lambda, 2, NPP_BORDER_REPLICATE, pUSMBuffer);
-    //Gossens version doesnt works with normalized images
-    //ippiMulC_32f_C1IR(scaleFactor, pSrcwBorderImage, stepBytesSrcwBorder, imageROIwBorderSize);
-    //ippiMulC_32f_C1IR(scaleFactor, pUSMImage, stepBytesUSM, imageROIwBorderSize);
-    //Aplying DNLM filter
-    //OLD this->dnlmFilter.dnlmFilter(pSrcwBorderImage, stepBytesSrcwBorder, CV_32FC1, pUSMImage, stepBytesUSM, pFilteredImage32f, stepBytesFiltered32f,  {imageROIwBorderSize.width, imageROIwBorderSize.height}, wSize, wSize_n, sigma_r);
+    cudaProfilerStart(); 
     DNLM_OpenACC(pSrcwBorderImage32f, stepBytesSrcwBorder32f, pIntegralImage32f, stepBytesIntegral, pFilteredImage32f, stepBytesFiltered32f, windowRadius, neighborRadius, imageROISize.width, imageROISize.height, wSize , wSize, wSize_n, wSize_n, sigma_r);
-
+    cudaProfilerStop();
     //Measure slapsed time
     //cudaEventRecord(stop);
     //Unormalize
-    //status = nppiMulC_32f_C1IR(scaleFactor, pFilteredImage32f, stepBytesFiltered32f, imageROISize);
+    status = nppiMulC_32f_C1IR(scaleFactor, pFilteredImage32f, stepBytesFiltered32f, imageROISize);
     //Convert back to uchar, add offset to pointer to remove border
     nppiConvert_32f8u_C1R(pFilteredImage32f, stepBytesFiltered32f, pFilteredImage8u, stepBytesFiltered8u, imageROISize, NPP_RND_FINANCIAL);
 
