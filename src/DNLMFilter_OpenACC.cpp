@@ -9,25 +9,16 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
     float * restrict pEuclDist = (float*) malloc(windowHeight * windowWidth * sizeof(float));
     float * restrict pWindowIJCorr = (float*) malloc(windowHeight * windowWidth * sizeof(float)); 
     //Region de datos privada peucldist (create)
-    int num_blocks = 2;
-    int block_size = (imageHeight/num_blocks);
     //Nivel de paralelismo gangs collapse
     #pragma acc data deviceptr(pSrcBorder[(windowHeight+2*(windowRadius+neighborRadius))*(windowWidth+2*(windowRadius+neighborRadius))], pSqrIntegralImage[(windowHeight+2*(windowRadius+neighborRadius)+1)*(windowWidth+2*(windowRadius+neighborRadius)+1)], pDst[imageHeight*imageWidth]) create(pEuclDist[0:windowHeight*windowWidth], pWindowIJCorr[windowHeight*windowWidth]) 
     //#pragma acc data present(pSrcBorder[0:(imageWidth+windowRadius+neighborRadius)+stepBytesSrcBorder/sizeof(float)*(imageHeight+windowRadius+neighborRadius)],  pSqrIntegralImage[(windowHeight+2*(windowRadius+neighborRadius)+1)*(windowWidth+2*(windowRadius+neighborRadius)+1)], pDst[0:imageWidth+stepBytesDst/sizeof(float)*imageHeight]) create(pEuclDist[0:windowHeight*windowWidth], pWindowIJCorr[windowHeight*windowWidth])
     {
-            for(int block = 0; block < num_blocks; block++)
-            {  
-                int starty = std::max(block * block_size, 0);
-                int endy   = std::min(starty + block_size, imageHeight);
-
-                #pragma acc parallel async(block%3+1) vector_length(128) num_workers(1)  
-                {  
-                     #pragma acc loop tile(*,*) 
-    	             //#pragma acc loop collapse(2) private(pEuclDist[0:windowHeight*windowWidth], pWindowIJCorr[0:windowHeight*windowWidth])   
-                     for(int j = starty; j < endy; j++)
-    	             {
-                        #pragma acc loop private(pEuclDist[0:windowHeight*windowWidth], pWindowIJCorr[0:windowHeight*windowWidth])  
-                         for (int i = 0; i < imageWidth; i++)
+        #pragma acc parallel vector_length(32) num_workers(4)  
+        {
+    	    #pragma acc loop gang collapse(2) private(pEuclDist[0:windowHeight*windowWidth], pWindowIJCorr[0:windowHeight*windowWidth])   
+            for(int j = 0; j < imageHeight; j++)
+    	    {
+                for (int i = 0; i < imageWidth; i++)
                 {
                     //Compute base address for each array
                     const int indexPdstBase = j * (stepBytesDst/sizeof(float));
@@ -45,14 +36,14 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
                     const float * restrict pNeighborhoodStartIJ = (float*) &pSrcBorder[indexNeighborIJBase + i + windowRadius];
                     
                     //Compute window correlation with IJ neighborhood
-                    #pragma acc loop worker collapse(2)
-                    //#pragma acc loop  //tile(21,21)
+                    //#pragma acc loop collapse(2)
+                    #pragma acc loop worker tile(8,8)
                     for(int row_w = 0; row_w < windowHeight; row_w++)
                     {
                         for(int col_w = 0; col_w < windowWidth; col_w++)
                         {
                             float neighborCorrSum = 0;
-                            #pragma acc loop collapse(2) reduction(+:neighborCorrSum) 
+                            #pragma acc loop vector collapse(2) reduction(+:neighborCorrSum)
                             for(int row_n = 0; row_n < neighborHeight; row_n++)
                             {
                                 for(int col_n = 0; col_n < neighborWidth; col_n++)
@@ -65,7 +56,7 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
                     }
                    
                     //#pragma acc loop
-                    #pragma acc loop  collapse(2) 
+                    #pragma acc loop collapse(2) 
                     for (int n = 0; n < windowHeight; n++)
                     {
 
@@ -90,8 +81,9 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
                     {
                         for(int col = 0; col < windowWidth; col++)
                         {
-                            pEuclDist[col + row * windowWidth] = expf(pEuclDist[col + row * windowWidth] *  -1/(sigma_r * sigma_r));
-                            sumExpTerm += pEuclDist[col + row * windowWidth];
+                            float filterWeight = expf(pEuclDist[col + row * windowWidth] *  1/(-2*(sigma_r * sigma_r)));
+                            pEuclDist[col + row * windowWidth] = filterWeight;
+                            sumExpTerm += filterWeight;
                         }
                     }
 
@@ -102,14 +94,14 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
                     {
                         for(int col = 0; col < windowWidth; col++)
                         {
-                            filterResult += pEuclDist[col + row * windowWidth] * pWindowStart[(col+neighborRadius) + (row+neighborRadius) * stepBytesSrcBorder/sizeof(float)];
+                            float filterRes = pEuclDist[col + row * windowWidth] * pWindowStart[(col+neighborRadius) + (row+neighborRadius) * stepBytesSrcBorder/sizeof(float)];
+                            filterResult += filterRes;                    
                         }
                     }
                     pDst[indexPdstBase + i] = filterResult/sumExpTerm;
                 }   
-            }        
-        }
-      }
-      #pragma acc wait   
+            }
+        }   
     }
 } 
+
