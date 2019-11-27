@@ -83,6 +83,13 @@ int main(int argc, char* argv[]){
     cout<< elapsed<<endl;
     //Write image to output file.
     imwrite(outputFile, outputImage);
+    pAt = outputFile.find_last_of('.'); 
+    cout <<outputFile.substr(0, pAt) + "_base.png"<<endl;
+    Mat baseOutput = imread(outputFile.substr(0, pAt) + "_base.png", IMREAD_GRAYSCALE);
+    double msd = norm(baseOutput, outputImage);
+    double pixels = (double) baseOutput.total();
+    msd = msd * msd / pixels;
+    cout << "MSE: "<< msd<<endl;
     //Release object memory
     inputImage.release();
     outputImage.release();
