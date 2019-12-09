@@ -8,12 +8,10 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
     //Array to store window matrix for euclidean distance
     float * restrict pEuclDist = (float*) malloc(windowHeight * windowWidth * sizeof(float));
     float * restrict pWindowIJCorr = (float*) malloc(windowHeight * windowWidth * sizeof(float)); 
-    //Region de datos privada peucldist (create)
-    //Nivel de paralelismo gangs collapse
+    
     #pragma acc data deviceptr(pSrcBorder[(windowHeight+2*(windowRadius+neighborRadius))*(windowWidth+2*(windowRadius+neighborRadius))], pSqrIntegralImage[(windowHeight+2*(windowRadius+neighborRadius)+1)*(windowWidth+2*(windowRadius+neighborRadius)+1)], pDst[imageHeight*imageWidth]) create(pEuclDist[0:windowHeight*windowWidth], pWindowIJCorr[windowHeight*windowWidth]) 
-    //#pragma acc data present(pSrcBorder[0:(imageWidth+windowRadius+neighborRadius)+stepBytesSrcBorder/sizeof(float)*(imageHeight+windowRadius+neighborRadius)],  pSqrIntegralImage[(windowHeight+2*(windowRadius+neighborRadius)+1)*(windowWidth+2*(windowRadius+neighborRadius)+1)], pDst[0:imageWidth+stepBytesDst/sizeof(float)*imageHeight]) create(pEuclDist[0:windowHeight*windowWidth], pWindowIJCorr[windowHeight*windowWidth])
     {
-        #pragma acc parallel vector_length(32) num_workers(2)   
+        #pragma acc parallel vector_length(32)    
         {
     	    #pragma acc loop gang collapse(2) private(pEuclDist[0:windowHeight*windowWidth], pWindowIJCorr[0:windowHeight*windowWidth])   
             for(int j = 0; j < imageHeight; j++)
@@ -36,7 +34,7 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
                     const float * restrict pNeighborhoodStartIJ = (float*) &pSrcBorder[indexNeighborIJBase + i + windowRadius];
                     
                     //Compute window correlation with IJ neighborhood
-                    #pragma acc loop worker tile(8,8)
+                    #pragma acc loop collapse(2)
                     for(int row_w = 0; row_w < windowHeight; row_w++)
                     {
                         for(int col_w = 0; col_w < windowWidth; col_w++)
