@@ -1,13 +1,14 @@
 # define the C compiler to use
 CC = nvcc 
 PGI = pgc++
+OPENCV3_HOME = /opt/tools/opencv-3
 # define any compile-time flags
 CFLAGS = -ccbin=pgc++ -Xcompiler " -std=c++11 -Minfo=accel  -ta=tesla:nordc -ta=tesla:cc35 -ta=tesla:lineinfo -Mcuda -O3" -O3 -cudart static  
 LIBS = -lnppc_static -lnppial_static -lnppitc_static -lnppidei_static -lnppif_static -lnppisu_static -lnppist_static -lnpps_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
-LDFLAGS = -L$(CUDA_HOME)/lib64 -L/root/Manuel/opencv/lib64
+LDFLAGS = -L$(CUDA_HOME)/lib64 -L$(OPENCV3_HOME)/lib
 # define any directories containing header files other than /usr/include
 #
-INCLUDES= -I../include -I$(CUDA_HOME)/include -I/root/Manuel/opencv/include 
+INCLUDES= -I../include -I$(CUDA_HOME)/include -I$(OPENCV3_HOME)/include 
 # define the C source files
 SRCS =  ParallelDNLM.cpp  DNLMFilter_OpenACC.cpp 
 # define the C object files
