@@ -65,7 +65,11 @@ int DNLMFilter::dnlmFilterBW(const Npp32f* pSrcBorder, int stepBytesSrcBorder, c
     
     //Allocate buffers memory
     pChunkMem2 = nppiMalloc_32f_C1(imageSize.width, 4*imageSize.height, &stepBytesEuclDist);
-    cudaProfilerStart();
+    
+    const int SBSB = stepBytesSrcBorder/sizeof(Npp32f);
+    const int SBTW = stepBytesThreadWeights/sizeof(Npp32f);
+    const int SBD = stepBytesDst/sizeof(Npp32f);    
+
     //For each distance between window patches
     for (int dn = 0; dn < wHalfLen+1; ++dn)
     {   
@@ -78,14 +82,14 @@ int DNLMFilter::dnlmFilterBW(const Npp32f* pSrcBorder, int stepBytesSrcBorder, c
                 const int n_min = max(min(nHalfLen-dn, imageSize.height-nHalfLen),nHalfLen+1);
                 const int n_max = min(max(imageSize.height-nHalfLen-1-dn, nHalfLen),imageSize.height-nHalfLen-1);
                 //Compute array base index
-                const int indexSrcImageBase = n_min*(stepBytesSrcBorder/sizeof(Npp32f));
-                const int indexSrcImageBaseWOffset = (n_min + dn)*(stepBytesSrcBorder/sizeof(Npp32f));
-                const int indexWeightsAcummBase= n_min*(stepBytesThreadWeights/sizeof(Npp32f));
-                const int indexWeightsAcummBaseWOffset= (n_min + dn)*(stepBytesThreadWeights/sizeof(Npp32f));
-                const int indexUSMImageBase = n_min*(stepBytesUSM/sizeof(Npp32f));
-                const int indexUSMImageBaseWOffset = (n_min + dn)*(stepBytesUSM/sizeof(Npp32f));
-                const int indexDstBase= n_min*(stepBytesDst/sizeof(Npp32f));
-                const int indexDstBaseWOffset= (n_min + dn)*(stepBytesDst/sizeof(Npp32f));
+                const int indexSrcImageBase = n_min*SBSB;
+                const int indexSrcImageBaseWOffset = (n_min + dn)*SBSB;
+                const int indexWeightsAcummBase= n_min*SBTW;
+                const int indexWeightsAcummBaseWOffset= (n_min + dn)*SBTW;
+                //const int indexUSMImageBase = n_min*(stepBytesUSM/sizeof(Npp32f));
+                //const int indexUSMImageBaseWOffset = (n_min + dn)*(stepBytesUSM/sizeof(Npp32f));
+                const int indexDstBase= n_min*SBD;
+                const int indexDstBaseWOffset= (n_min + dn)*SBD;
                 //Compute edges of ROI
                 const int m_min = max(min(nHalfLen-dm,imageSize.width-nHalfLen),nHalfLen+1);
                 const int m_max = min(max(imageSize.width-nHalfLen-1-dm, nHalfLen),imageSize.width-nHalfLen-1);
@@ -114,9 +118,9 @@ int DNLMFilter::dnlmFilterBW(const Npp32f* pSrcBorder, int stepBytesSrcBorder, c
                 nppiExp_32f_C1IR(pEuclDist, stepBytesEuclDist, euclROISize);          
 
                 //Performing filtering
-                nppiMul_32f_C1R(pEuclDist, stepBytesEuclDist, (Npp32f*) (pUSMImage +indexUSMImageBaseWOffset + (m_min + dm)), stepBytesUSM, pTmp, stepBytesTmp, euclROISize);
+                nppiMul_32f_C1R(pEuclDist, stepBytesEuclDist, (Npp32f*) (pSrcBorder +indexSrcImageBaseWOffset + (m_min + dm)), stepBytesSrcBorder, pTmp, stepBytesTmp, euclROISize);
                 //Exploiting weights symmetry
-                nppiMul_32f_C1R(pEuclDist, stepBytesEuclDist, (Npp32f*) (pUSMImage + indexUSMImageBase + m_min), stepBytesUSM, pTmp2, stepBytesTmp, euclROISize);
+                nppiMul_32f_C1R(pEuclDist, stepBytesEuclDist, (Npp32f*) (pSrcBorder + indexSrcImageBase + m_min), stepBytesSrcBorder, pTmp2, stepBytesTmp, euclROISize);
                       
                 //Accumulate signal and weights
                 nppiAdd_32f_C1IR(pTmp, stepBytesTmp, (Npp32f*) (pThreadDst + indexDstBase + m_min), stepBytesThreadDst, euclROISize);

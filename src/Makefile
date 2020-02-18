@@ -5,6 +5,8 @@
 
 #CUDA_HOME = /opt/tools/cuda-9.0.176
 CUDA_HOME = /opt/tools/cuda-10.1.105
+OPENCV_HOME = /opt/tools/opencv-3
+
 # define the C compiler to use
 CC = nvcc 
 # define any compile-time flags
@@ -13,11 +15,11 @@ CFLAGS = -O3 -Xcompiler -fopenmp -cudart static -gencode arch=compute_35,code=sm
 
 LIBS = -lnppc_static -lnppial_static -lnppitc_static -lnppidei_static -lnppif_static -lnppisu_static -lnpps_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
 #LIBS = -lnppc_static -lnppi_static -lnpps_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
-LDFLAGS = -L$(CUDA_HOME)/lib64 -L/opt/tools/opencv-3/lib
-LDFLAGS_DEBUG = -L$(CUDA_HOME)/lib64 -L/opt/tools/opencv-3/lib
+LDFLAGS = -L$(CUDA_HOME)/lib64 -L$(OPENCV_HOME)/lib
+LDFLAGS_DEBUG = -L$(CUDA_HOME)/lib64 -L$(OPENCV_HOME)/lib
 # define any directories containing header files other than /usr/include
 #
-INCLUDES= -I../include -I$(CUDA_HOME)/include -I/opt/tools/opencv-3/include 
+INCLUDES= -I../include -I$(CUDA_HOME)/include -I$(OPENCV_HOME)/include 
 
 
 # define the C source files
@@ -34,7 +36,7 @@ SRCS =  DNLMFilter.cpp ParallelDNLM.cpp
 OBJS = $(SRCS:.c=.o)
 
 # define the executable file
-MAIN = dnlmfilter
+MAIN = nlmfilter_k40_goossens
 
 #
 # The following part of the makefile is generic; it can be used to
