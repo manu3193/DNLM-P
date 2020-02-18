@@ -36,8 +36,8 @@ SRCS =  DNLMFilter.cpp ParallelDNLM.cpp
 OBJS = $(SRCS:.c=.o)
 
 # define the executable file
-MAIN = nlmfilter
-MAIN_KNL = nlmfilter_knl
+MAIN = nlmfilter_orig
+MAIN_KNL = nlmfilter_knl_orig
 
 #
 # The following part of the makefile is generic; it can be used to
