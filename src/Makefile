@@ -4,25 +4,27 @@
 #
 
 IPP_LIBS_PATH = $(IPPROOT)/lib/intel64
+OPENCV3_HOME = /opt/tools/opencv-3
+
 # define the C compiler to use
 CC = icpc
 # define any compile-time flags
-CFLAGS_KNL = -g  -qopenmp -O3 -xMIC-AVX512  -fma -align -finline-functions 
-CFLAGS_DEBUG = -g -std=c++11 -qopenmp -O3  -fma -align -finline-functions 
-CFLAGS_KNL_DEBUG = -g -std=c++11 -qopenmp -O3 -xMIC-AVX512  -fma -align -finline-functions 
+CFLAGS_KNL = -qopenmp -O3 -xMIC-AVX512  -fma -align -finline-functions 
+CFLAGS_DEBUG = -g -std=c++11 -qopenmp -O0  -align -finline-functions 
+CFLAGS_KNL_DEBUG = -g -std=c++11 -qopenmp -O0 -xMIC-AVX512  -align -finline-functions 
 CFLAGS = -g  -qopenmp -O3  -xCORE-AVX2 -fma -align -finline-functions 
 
-LIBS = -lippi -lippcv -lippcc -lipps -lippvm  -lippcore  -lopencv_core -lopencv_highgui -lopencv_imgcodecs -littnotify
+LIBS = -lippi -lippcv -lippcc -lipps -lippvm  -lippcore  -lopencv_core -lopencv_highgui -lopencv_imgcodecs 
 
-LDFLAGS =-g3 -Wall -L$(IPP_LIBS_PATH) -L/opt/tools/opencv-3/lib -L/opt/intel/advisor/lib64
+LDFLAGS =-g3 -Wall -L$(IPP_LIBS_PATH) -L$(OPENCV3_HOME)/lib 
 LDFLAGS_DEBUG =-g3 -Wall -L$IPP_LIBS_PATH -qopt-report=5  -qopt-report-phase=loop,vec,cg -qopt-report-embed
 # define any directories containing header files other than /usr/include
 #
-INCLUDES= -I../include -I$(IPPROOT)/include -I/opt/tools/opencv-3/include -I/opt/intel/advisor/include 
+INCLUDES= -I../include -I$(IPPROOT)/include -I$(OPENCV3_HOME)/include 
 
 
 # define the C source files
-SRCS =  NoAdaptiveUSM.cpp DNLMFilter.cpp ParallelDNLM.cpp
+SRCS =  DNLMFilter.cpp ParallelDNLM.cpp
 
 # define the C object files
 #
@@ -35,8 +37,8 @@ SRCS =  NoAdaptiveUSM.cpp DNLMFilter.cpp ParallelDNLM.cpp
 OBJS = $(SRCS:.c=.o)
 
 # define the executable file
-MAIN = dnlmfilter
-MAIN_KNL = dnlmfilter_knl
+MAIN = nlmfilter_xeon_goossens
+MAIN_KNL = nlmfilter_knl_goossens
 
 #
 # The following part of the makefile is generic; it can be used to
