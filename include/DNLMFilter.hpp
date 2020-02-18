@@ -8,7 +8,7 @@
 #include <npp.h>
 #include <nppi.h>
 #include <cuda_runtime.h>
-#include "cuda_profiler_api.h"
+
 using namespace cv;
 using namespace std;
 

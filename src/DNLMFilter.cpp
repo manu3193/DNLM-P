@@ -149,7 +149,6 @@ int DNLMFilter::dnlmFilterBW(const Npp32f* pSrcBorder, int stepBytesSrcBorder, c
     nppiThreshold_32f_C1IR(pWeightsAcumm, stepBytesWeightsAcumm, imageSize, 1e-20f,NPP_CMP_LESS);
     //Normalize
     nppiDiv_32f_C1IR(pWeightsAcumm, stepBytesWeightsAcumm, pDst, stepBytesDst, imageSize);
-    cudaProfilerStop();
     //Free resources
     nppiFree(pChunkMem);
     nppiFree(pChunkMem2);
