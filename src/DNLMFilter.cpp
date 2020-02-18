@@ -63,20 +63,23 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
         //Allocate working buffer
         pBuffer = ippsMalloc_8u( bufSize );
 
-        __itt_resume(); //Intel Advisor starts recording performance data
-        __SSC_MARK(0xFACE);    
-
+        const int SBD = stepBytesDst/sizeof(Ipp32f);
+        const int SBSB = stepBytesSrcBorder/sizeof(Ipp32f);
+        const int SBSI = stepBytesSqrIntegral/sizeof(Ipp32f);
+        const int SBED = stepBytesEuclDist/sizeof(Ipp32f);
+        const int SBWC = stepBytesWindowIJCorr/sizeof(Ipp32f);
+        
         #pragma omp for collapse(2)
         for (int j = 0; j < imageSize.height; ++j)
         {
             for (int i = 0; i < imageSize.width; ++i)
             {
-                const int indexPdstBase = j*(stepBytesDst/sizeof(Ipp32f));
-                const int indexWindowStartBase = j*(stepBytesSrcBorder/sizeof(Ipp32f));
-                const int indexNeighborIJBase = (j + neighborhoodStartOffset)*(stepBytesSrcBorder/sizeof(Ipp32f));
-                const int indexUSMWindowBase =(j + windowTopLeftOffset)*(stepBytesUSM/sizeof(Ipp32f));
-                const int indexIINeighborIJBase = (j + neighborhoodStartOffset)*(stepBytesSqrIntegral/sizeof(Ipp32f));
-                const int indexIINeighborIJBaseWOffset = (j + neighborhoodStartOffset + iIRightBottomOffset)*(stepBytesSqrIntegral/sizeof(Ipp32f));
+                const int indexPdstBase = j*DBD;
+                const int indexWindowStartBase = j*SBSB;
+                const int indexNeighborIJBase = (j + neighborhoodStartOffset)*SBSB;
+                //const int indexUSMWindowBase =(j + windowTopLeftOffset)*(stepBytesUSM/sizeof(Ipp32f));
+                const int indexIINeighborIJBase = (j + neighborhoodStartOffset)*SBSI;
+                const int indexIINeighborIJBaseWOffset = (j + neighborhoodStartOffset + iIRightBottomOffset)*SBSI;
                 //Get summation of (i,j) neighborhood area
                 const Ipp32f sqrSumIJNeighborhood = pSqrIntegralImage[indexIINeighborIJBaseWOffset + (i + neighborhoodStartOffset+ iIRightBottomOffset)] 
                                                     + pSqrIntegralImage[indexIINeighborIJBase + (i + neighborhoodStartOffset)] 
@@ -93,10 +96,10 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                 #pragma vector aligned
                 for (int n = 0; n < windowSize.height; ++n)
                 {
-                    const int indexEuclDistBase = n*(stepBytesEuclDist/sizeof(Ipp32f));
-                    const int indexWindowIJCorr = n*(stepBytesWindowIJCorr/sizeof(Ipp32f));
-                    const int indexIINeighborMNBase = (j + n )*(stepBytesSqrIntegral/sizeof(Ipp32f));
-                    const int indexIINeighborMNBaseWOffset = (j + n + iIRightBottomOffset)*(stepBytesSqrIntegral/sizeof(Ipp32f));
+                    const int indexEuclDistBase = n*SBED;
+                    const int indexWindowIJCorr = n*SBWC;
+                    const int indexIINeighborMNBase = (j + n )*SBSI;
+                    const int indexIINeighborMNBaseWOffset = (j + n + iIRightBottomOffset)*SBSI;
 
                     #pragma vector aligned
                     for (int m = 0; m < windowSize.width; ++m)
@@ -123,9 +126,6 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                 pDst[indexPdstBase+i] = (Ipp32f) (filterResult/ sumExpTerm);
             }
         }
-
-        __SSC_MARK(0xDEAD);
-        __itt_pause(); // Intel Advisor stops recording performance data
 
         ippiFree(pChunkMem);
         ippsFree(pBuffer);
