@@ -74,7 +74,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
         {
             for (int i = 0; i < imageSize.width; ++i)
             {
-                const int indexPdstBase = j*DBD;
+                const int indexPdstBase = j*SBD;
                 const int indexWindowStartBase = j*SBSB;
                 const int indexNeighborIJBase = (j + neighborhoodStartOffset)*SBSB;
                 //const int indexUSMWindowBase =(j + windowTopLeftOffset)*(stepBytesUSM/sizeof(Ipp32f));
@@ -88,7 +88,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
 
                 const Ipp32f *pWindowStart = &pSrcBorder[indexWindowStartBase + i]; 
                 const Ipp32f *pNeighborhoodStartIJ = &pSrcBorder[indexIINeighborIJBase + (i + neighborhoodStartOffset)];
-                const Ipp32f *pUSMWindowStart = (Ipp32f *) &pUSMImage[indexUSMWindowBase+(i + windowTopLeftOffset)];
+                //const Ipp32f *pUSMWindowStart = (Ipp32f *) &pUSMImage[indexUSMWindowBase+(i + windowTopLeftOffset)];
 
                 
                 ippiCrossCorrNorm_32f_C1R( pWindowStart, stepBytesSrcBorder, windowBorderSize, pNeighborhoodStartIJ, stepBytesSrcBorder, neighborhoodSize, pWindowIJCorr, stepBytesWindowIJCorr, corrAlgCfg, pBuffer);
@@ -120,7 +120,7 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                 ippiDivC_32f_C1IR((Ipp32f) -(sigma_r * sigma_r), pEuclDist, stepBytesEuclDist, windowSize);
                 ippiExp_32f_C1IR(pEuclDist, stepBytesEuclDist, windowSize);
                 ippiSum_32f_C1R(pEuclDist, stepBytesEuclDist, windowSize, &sumExpTerm, ippAlgHintNone);
-                ippiMul_32f_C1IR(pUSMWindowStart, stepBytesUSM, pEuclDist, stepBytesEuclDist, windowSize);
+                ippiMul_32f_C1IR(pWindowStart, stepBytesSrcBorder, pEuclDist, stepBytesEuclDist, windowSize);
                 ippiSum_32f_C1R(pEuclDist, stepBytesEuclDist, windowSize, &filterResult, ippAlgHintNone);
 
                 pDst[indexPdstBase+i] = (Ipp32f) (filterResult/ sumExpTerm);
