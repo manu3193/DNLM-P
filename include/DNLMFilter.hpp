@@ -5,7 +5,6 @@
 #include <cstdio>
 #include <opencv2/opencv.hpp>
 #include <ipp.h>
-#include "ittnotify.h"
 
 using namespace cv;
 using namespace std;

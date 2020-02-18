@@ -47,27 +47,27 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
         //Allocate memory for sqrtDist matrix
         pEuclDist = ippiMalloc_32f_C1(windowSize.width, windowSize.height, &stepBytesEuclDist);
 
-        __itt_resume(); //Intel Advisor starts recording performance data
-        __SSC_MARK(0xFACE);
+        const int SBD = stepBytesDst/sizeof(Ipp32f);
+        const int SBSB = stepBytesSrcBorder/sizeof(Ipp32f);
+        const int SBED = stepBytesEuclDist/sizeof(Ipp32f);
 
         #pragma omp for collapse(2)
         for (int j = 0; j < imageSize.height; ++j)
         {
             for (int i = 0; i < imageSize.width; ++i)
             {
-                const int indexPdstBase = j*(stepBytesDst/sizeof(Ipp32f));
-                const int indexWindowStartBase = j*(stepBytesSrcBorder/sizeof(Ipp32f));
-                const int indexNeighborIJBase = (j + neighborhoodStartOffset)*(stepBytesSrcBorder/sizeof(Ipp32f));
-                const int indexUSMWindowBase =(j + windowTopLeftOffset)*(stepBytesUSM/sizeof(Ipp32f));
+                const int indexPdstBase = j*SBD;
+                const int indexWindowStartBase = j*SBSB;
+                const int indexNeighborIJBase = (j + neighborhoodStartOffset)*SBSB;
                 const Ipp32f *pWindowStart = &pSrcBorder[indexWindowStartBase+i]; 
                 const Ipp32f *pNeighborhoodStartIJ = &pSrcBorder[indexNeighborIJBase + (i + neighborhoodStartOffset)];
-                const Ipp32f *pUSMWindowStart = &pUSMImage[indexUSMWindowBase+(i + windowTopLeftOffset)];
+                //const Ipp32f *pUSMWindowStart = &pUSMImage[indexUSMWindowBase+(i + windowTopLeftOffset)];
 
                 
                 for (int n = 0; n < windowSize.height; ++n)
                 {
-                    const int indexEuclDistBase = n * (stepBytesEuclDist/sizeof(Ipp32f));
-                    const int indexNeighborNMBase = n * (stepBytesSrcBorder/sizeof(Ipp32f));
+                    const int indexEuclDistBase = n * SBED;
+                    const int indexNeighborNMBase = n * SBSB;
 
                     
                     for (int m = 0; m < windowSize.width; ++m)
@@ -81,21 +81,14 @@ int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, c
                 ippiDivC_32f_C1IR((Ipp32f) -(sigma_r * sigma_r), pEuclDist, stepBytesEuclDist, windowSize);
                 ippiExp_32f_C1IR(pEuclDist, stepBytesEuclDist, windowSize);
                 ippiSum_32f_C1R(pEuclDist, stepBytesEuclDist, windowSize, &sumExpTerm, ippAlgHintNone);
-                ippiMul_32f_C1IR(pUSMWindowStart, stepBytesUSM, pEuclDist, stepBytesEuclDist, windowSize);
+                ippiMul_32f_C1IR(pWindowStart, stepBytesSrcBorder, pEuclDist, stepBytesEuclDist, windowSize);
                 ippiSum_32f_C1R(pEuclDist, stepBytesEuclDist, windowSize, &filterResult, ippAlgHintNone);
 
                 pDst[indexPdstBase+i] = (Ipp32f) (filterResult/ sumExpTerm);
             }
         }
 
-        __SSC_MARK(0xDEAD);
-        __itt_pause();        
-
         ippiFree(pEuclDist);
     }
-
-    __itt_pause();    
-
     return 1;
-    
 }
