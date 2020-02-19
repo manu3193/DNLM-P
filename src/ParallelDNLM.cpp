@@ -13,7 +13,7 @@ ParallelDNLM::ParallelDNLM(){
     this->wSize_n = 7;
     this->kernelStd = 3;
     this->kernelLen = 16;
-    this->sigma_r = 0.039; 
+    this->sigma_r = 0.5; 
     this->lambda = 1;
 }
 
