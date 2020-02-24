@@ -1,39 +1,37 @@
-# define the C compiler to use
+CUDA_HOME=/opt/tools/cuda-10.1.105
+OPENCV_HOME = /opt/tools/opencv-3
+
+# define the compilers to use
 CC = nvcc 
-PGI = pgc++
-OPENCV3_HOME = /opt/tools/opencv-3
+PGI = pgcc
+PGI++ = pgc++
+
 # define any compile-time flags
-CFLAGS = -ccbin=pgc++ -Xcompiler " -std=c++11 -Minfo=accel  -ta=tesla:nordc -ta=tesla:cc35 -ta=tesla:lineinfo -Mcuda -O3" -O3 -cudart static  
-LIBS = -lnppc_static -lnppial_static -lnppitc_static -lnppidei_static -lnppif_static -lnppisu_static -lnppist_static -lnpps_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
-LDFLAGS = -L$(CUDA_HOME)/lib64 -L$(OPENCV3_HOME)/lib
-# define any directories containing header files other than /usr/include
-#
-INCLUDES= -I../include -I$(CUDA_HOME)/include -I$(OPENCV3_HOME)/include 
-# define the C source files
-SRCS =  ParallelDNLM.cpp  DNLMFilter_OpenACC.cpp 
-# define the C object files
-#
-# This uses Suffix Replacement within a macro:
-#   $(name:string1=string2)
-#         For each word in 'name' replace 'string1' with 'string2'
-# Below we are replacing the suffix .c of all words in the macro SRCS
-# with the .o suffix
-#
-OBJS = $(SRCS:.c=.o)
+CFLAGS_DEBUG = -g -G -std=c++11 -cudart static -O0 
+CFLAGS = -std=c++11 -ccbin=$(PGI++) -Xcompiler "-ta=tesla:cc35 -ta=tesla:nordc -Mcuda" -cudart static -use_fast_math -O3
+CFLAGSPGI = -acc -Minfo=accel -ta=tesla:cc35 -ta=tesla:nordc -fast -Minline -Mvect -O3
+CFLAGSPGI_DEBUG = -acc -g -Minfo=accel  -ta=tesla:nordc -ta=tesla:cc35 -Mcuda -Minline -Mvect -O0
+LIBS = -lnppial_static -lnppitc_static -lnppidei_static -lnppif_static -lnppisu_static -lnppist_static -lnpps_static -lnppc_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
+LDFLAGS = -L$(CUDA_HOME)/lib64 -L$(OPENCV_HOME)/lib
+
+# define include path flags 
+INCLUDES= -I../include -I$(CUDA_HOME)/include -I$(OPENCV_HOME)/include 
+
 # define the executable file
-MAIN = nlmfilter
-#
-# The following part of the makefile is generic; it can be used to
-# build any executable just by changing the definitions above and by
-# deleting dependencies appended to the file from 'make depend'
-#
+MAIN = nlmfilter_k40_fft
+
+all: clean $(MAIN)
+
 .PHONY: clean
-$(MAIN): $(OBJS) 
-	$(CC) $(OBJS) $(CFLAGS) $(INCLUDES)  -o $@ $(LDFLAGS) $(LIBS)
-#this is a suffix replacement rule for building .o's from .c's
-# it uses automatic variables $<: the name of the prerequisite of
-# the rule(a .c file) and $@: the name of the target of the rule (a .o file)
-# (see the gnu make manual section about automatic variables)
-.c.o:
-	pgc++ -c $(PGFLAGS) $(INCLUDES) $<
+
+$(MAIN):  DNLMFilter_OpenACC.o ParallelDNLM.o 
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)  
+
+ParallelDNLM.o: ParallelDNLM.cpp
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+
+DNLMFilter_OpenACC.o: DNLMFilter_OpenACC.c
+	$(PGI) $(CFLAGSPGI) -c $< -o $@
+
 clean:
+	rm -rf $(MAIN) *.o 
