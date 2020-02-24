@@ -12,7 +12,7 @@ ParallelDNLM::ParallelDNLM(){
     this->wSize_n = 7;
     this->kernelStd = 3;
     this->kernelLen = 16;
-    this->sigma_r = 0.6; 
+    this->sigma_r = 0.5; 
     this->lambda = 1;
 }
 
@@ -173,9 +173,7 @@ Mat ParallelDNLM::filterDNLM(const Mat inputImage, int wSize, int wSize_n, float
     status = nppsConvert_64f32f(pSqrIntegralImage64f, pIntegralImage32f, stepBytesSqrIntegral64f/sizeof(Npp64f));
     status = nppiMulC_32f_C1IR(normFactor32f, pIntegralImage32f, stepBytesIntegral, integralImageROISize);
     //timer start
-    cudaProfilerStart(); 
     DNLM_OpenACC(pSrcwBorderImage32f, stepBytesSrcwBorder32f, pIntegralImage32f, stepBytesIntegral, pFilteredImage32f, stepBytesFiltered32f, windowRadius, neighborRadius, imageROISize.width, imageROISize.height, wSize , wSize, wSize_n, wSize_n, sigma_r);
-    cudaProfilerStop();
     //Measure slapsed time
     //cudaEventRecord(stop);
     //Unormalize
