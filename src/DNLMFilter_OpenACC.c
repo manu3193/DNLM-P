@@ -1,5 +1,4 @@
 #include <stdlib.h> 
-#include <cmath>
 #include <accelmath.h>
 
 void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* pSqrIntegralImage, int stepBytesSqrIntegral, float* pDst, int stepBytesDst, int windowRadius, int neighborRadius, int imageWidth, int imageHeight, int windowWidth, int windowHeight, int neighborWidth, int neighborHeight, float sigma_r)
@@ -14,7 +13,7 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
     const int stepBSB = stepBytesSrcBorder/sizeof(float); 
     //Region de datos privada peucldist (create)
     //Nivel de paralelismo gangs collapse
-    #pragma acc data deviceptr(pSrcBorder[(windowHeight+2*(windowRadius+neighborRadius))*(windowWidth+2*(windowRadius+neighborRadius))], pSqrIntegralImage[(windowHeight+2*(windowRadius+neighborRadius)+1)*(windowWidth+2*(windowRadius+neighborRadius)+1)], pDst[imageHeight*imageWidth])
+    #pragma acc data deviceptr(pSrcBorder, pSqrIntegralImage, pDst)
     {
         #pragma acc parallel  
         {
