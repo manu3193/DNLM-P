@@ -1,57 +1,37 @@
-CUDA_HOME=/opt/tools/cuda-10.1.105/
-#CUDA_HOME = /opt/tools/cuda-9.0.176
-#CUDA_HOME = /opt/tools/cuda-8.0
+CUDA_HOME=/opt/tools/cuda-10.1.105
 OPENCV_HOME = /opt/tools/opencv-3
 
-# define the C compiler to use
+# define the compilers to use
 CC = nvcc 
-PGI = pgc++
+PGI = pgcc
+PGI++ = pgc++
+
 # define any compile-time flags
-CFLAGS_DEBUG = -g -G -ccbin=pgc++ -Xcompiler "-acc -g -std=c++11 -Minfo=accel  -ta=tesla:nordc -ta=tesla:cc35 -ta=tesla -Mcuda -Minline -Mvect " -cudart static -O0 -DDEBUG
-CFLAGS = -ccbin=pgc++ -Xcompiler "-acc -std=c++11 -Minfo=accel  -ta=tesla:cc35 -ta=tesla:nordc -fast -Mcuda -Minline -Mvect -O3"  -cudart static -use_fast_math -O3
-CFALGS_MC = -g -std=c++11 -Minfo=all -acc -ta=multicore -O0
+CFLAGS_DEBUG = -g -G -std=c++11 -cudart static -O0 
+CFLAGS = -std=c++11 -ccbin=$(PGI++) -Xcompiler "-ta=tesla:cc35 -ta=tesla:nordc -Mcuda" -cudart static -use_fast_math -O3
+CFLAGSPGI = -acc -Minfo=accel -ta=tesla:cc35 -ta=tesla:nordc -fast -Minline -Mvect -O3
+CFLAGSPGI_DEBUG = -acc -g -Minfo=accel  -ta=tesla:nordc -ta=tesla:cc35 -Mcuda -Minline -Mvect -O0
 LIBS = -lnppial_static -lnppitc_static -lnppidei_static -lnppif_static -lnppisu_static -lnppist_static -lnpps_static -lnppc_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
-LIBS_MC = -lopencv_core -lopencv_highgui -lopencv_imgcodecs
-#LIBS = -lnppc_static -lnppi_static -lnpps_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
-LDFLAGS = -L$(CUDA_HOME)/lib64 -L$(OPENCV_HOME)lib
-LDFLAGS_DEBUG = -L$(CUDA_HOME)/lib64 -L$(OPENCV_HOME)/lib
-LDFLAGS_MC = -L$(OPENCV_HOME)/lib
-# define any directories containing header files other than /usr/include
-#
+LDFLAGS = -L$(CUDA_HOME)/lib64 -L$(OPENCV_HOME)/lib
+
+# define include path flags 
 INCLUDES= -I../include -I$(CUDA_HOME)/include -I$(OPENCV_HOME)/include 
-INCLUDES_MC = -I$(OPENCV_HOME)/include
-# define the C source files
-SRCS =  ParallelDNLM.cpp  DNLMFilter_OpenACC.cpp 
-SRCS_MC =  ParallelDNLM_MC.cpp  DNLMFilter_OpenACC.cpp
-# define the C object files
-#
-# This uses Suffix Replacement within a macro:
-#   $(name:string1=string2)
-#         For each word in 'name' replace 'string1' with 'string2'
-# Below we are replacing the suffix .c of all words in the macro SRCS
-# with the .o suffix
-#
-OBJS = $(SRCS:.c=.o)
-OBJS_MC = $(SRCS_MC:.c=.o)
+
 # define the executable file
 MAIN = nlmfilter_k40_orig
-#
-# The following part of the makefile is generic; it can be used to
-# build any executable just by changing the definitions above and by
-# deleting dependencies appended to the file from 'make depend'
-#
+
+all: clean $(MAIN)
+
 .PHONY: clean
-$(MAIN): $(OBJS) 
-	$(CC) $(OBJS) $(CFLAGS) $(INCLUDES)  -o $@ $(LDFLAGS) $(LIBS)
-multicore: $(OBJS_MC)  
-	$(PGI) $(OBJS_MC) $(CFLAGS_MC) $(INCLUDES_MC)  -o $@ $(LDFLAGS_MC) $(LIBS_MC)
-debug: $(OBJS) 
-	$(CC) $(OBJS) $(CFLAGS_DEBUG) $(INCLUDES)  -o $(MAIN) $(LDFLAGS_DEBUG) $(LIBS)
-#this is a suffix replacement rule for building .o's from .c's
-# it uses automatic variables $<: the name of the prerequisite of
-# the rule(a .c file) and $@: the name of the target of the rule (a .o file)
-# (see the gnu make manual section about automatic variables)
-.c.o:
-	pgc++ -c $(PGFLAGS) $(INCLUDES) $<
+
+$(MAIN):  DNLMFilter_OpenACC.o ParallelDNLM.o 
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)  
+
+ParallelDNLM.o: ParallelDNLM.cpp
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+
+DNLMFilter_OpenACC.o: DNLMFilter_OpenACC.c
+	$(PGI) $(CFLAGSPGI) -c $< -o $@
+
 clean:
-	rm $(MAIN) $(OBJS)
+	rm -rf $(MAIN) *.o 
