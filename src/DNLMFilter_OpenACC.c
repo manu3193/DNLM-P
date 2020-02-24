@@ -1,9 +1,8 @@
-
+#include <stdlib.h>
 #include <accelmath.h>
 
 
 void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, float* pDst, int stepBytesDst, int windowRadius, int neighborRadius, int imageWidth, int imageHeight, int windowWidth, int windowHeight, int neighborWidth, int neighborHeight, float sigma_r)
-
 {
 
     //Array to store window matrix for euclidean distance
@@ -11,7 +10,8 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, float* pDst, 
     const int stepBSB = stepBytesSrcBorder/sizeof(float);
     const int stepBD = stepBytesDst/sizeof(float);
     
-    #pragma acc data deviceptr(pSrcBorder[(imageHeight+2*(windowRadius+neighborRadius))*(imageWidth+2*(windowRadius+neighborRadius))], pDst[imageHeight*imageWidth])  
+//    #pragma acc data deviceptr(pSrcBorder[(imageHeight+2*(windowRadius+neighborRadius))*(imageWidth+2*(windowRadius+neighborRadius))], pDst[imageHeight*imageWidth])  
+    #pragma acc data deviceptr(pSrcBorder,pDst)
     {
         #pragma acc parallel   
         {   
