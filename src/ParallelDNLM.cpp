@@ -2,7 +2,7 @@
 
 using namespace std;
   
-void DNLM_OpenACC(const float*, int, const float*, int, float*, int, int, int, int, int, int, int, int, int, float);
+extern "C" void DNLM_OpenACC(const float*, int, const float*, int, float*, int, int, int, int, int, int, int, int, int, float);
 
 /**
  *  * @brief      Constructs the object with default parameters
