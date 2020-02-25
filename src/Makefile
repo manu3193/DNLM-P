@@ -36,7 +36,7 @@ SRCS =  DNLMFilter.cpp ParallelDNLM.cpp
 OBJS = $(SRCS:.c=.o)
 
 # define the executable file
-MAIN = nlmfilter_orig
+MAIN = nlmfilter_xeon_orig
 MAIN_KNL = nlmfilter_knl_orig
 
 #
