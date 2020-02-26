@@ -4,69 +4,76 @@
 using namespace std;
   
 
-/**
- * @brief      Constructs the object with default parameters
- */
-ParallelDNLM::ParallelDNLM(){
-    this->wSize = 21;
-    this->wSize_n = 7;
-    this->kernelStd = 3;
-    this->kernelLen = 16;
-    this->sigma_r = 10; 
-    this->lambda = 1;
-}
-
-
-/**
- * @brief      Constructs the object with the given parameters
- *
- * @param[in]  wSize      The window size S = wSize x wSize
- * @param[in]  wSize_n    The neighborhood size W = wSize_n x wSize_n
- * @param[in]  sigma_r    The filter bandwidth h = 2 * sigma_r
- * @param[in]  lambda     The lambda gain of USM filter
- * @param[in]  kernelLen  The kernel length of USM filter USM_kernel_len = kernelLen * kernelLen
- * @param[in]  kernelStd  The kernel std of USM filter. 
- * 
- * For recomended parameters use 6 * kernelStd = kernelLen + 2
- * 
- */
-ParallelDNLM::ParallelDNLM(int wSize, int wSize_n, float sigma_r, float lambda, int kernelLen, float kernelStd){
-    this->wSize = wSize;
-    this->wSize_n = wSize_n;
-    this->kernelStd = kernelStd;
-    this->kernelLen = kernelLen;
-    this->sigma_r = sigma_r; 
-    this->lambda = lambda;
-}
-
-
 
 int main(int argc, char* argv[]){
-    ParallelDNLM *parallelDNLM;
-    regex intRegex = regex("[+]?[0-9]+");
-    regex floatRegex = regex("[+]?([0-9]*[.])?[0-9]+");
+    ParallelDNLM parallelDNLM;
+    //Parameters to read    
+    string inputFileStr;
+    int windowSize, neighborhoodSize;
+    float sigma;
+   
+    string programName = argv[0];
 
-    if (argc == 2){
-        //cout << "Using default parameters W=21x21, W_n=7x7, sigma_r=10, lambda=1, USM_len=16,USM_std=3" << endl;
-        parallelDNLM = new ParallelDNLM();
-    } 
+    for(int i=1; i<argc; i++){
+        string cur(argv[i]);
+        if(cur == "-w"){
+            if((i+1) < argc){
+                i++;
+                if(!(istringstream(argv[i]) >> windowSize)){
+		    cerr << "[error] Expected valid windowSize value after '" << cur << "'." << endl;
+	            exit(1);
+		}
+	    }else{
+	        cerr << "[error] Expected search window size value after '" << cur << "'." << endl;
+	        exit(1);
+	    }
+        }
+        else if(cur == "-n"){
+            if((i+1) < argc){
+                i++;
+                if(!(istringstream(argv[i]) >> neighborhoodSize)){
+	            cerr << "[error] Expected valid neighborhood size value after '" << cur << "'." << endl;
+		    exit(1);
+		}	
+            }else{
+                cerr << "[error] Expected neighborhood size value after '" << cur << "'." << endl;
+                exit(1);
+            }
+        }
+        else if(cur == "-s"){
+            if((i+1) < argc){
+                i++;
+                if(!(istringstream(argv[i]) >> sigma)){
+                    cerr << "[error] Expected valid sigma value after '" << cur << "'." << endl;
+                    exit(1);
+                }
+            }else{
+                cerr << "[error] Expected sigma value after '" << cur << "'." << endl;
+                exit(1);
+            }
+        }
+        else{
+            inputFileStr = cur;
+        }
+    }
+    
+    if(argc<2){
+        cerr << "Usage: "<< programName << " [OPTION]... FILE"<<endl<<endl;
+        cerr << "OPTION:"<<endl;
+        cerr << "  -w          Length in pixels of the squared search window"<<endl;
+        cerr << "  -n          Length in pixels of the squared pixel neighborhood"<<endl;
+        cerr << "  -s          Smooth parameter" <<endl;
+        return 0;
+    }  
+
     //Check input arguments
-    else if (argc !=8){
-        cerr << "Error parsing parameters, please look at the documentation for correct use" <<endl;
-        return -1;
-    }
-    else if (!regex_match(string(argv[2]), intRegex) & !regex_match(string(argv[3]), intRegex) & !regex_match(string(argv[6]), intRegex)){
-        return -1;
-    }
-    else if (!regex_match(string(argv[4]), floatRegex) & !regex_match(string(argv[5]), floatRegex)  & !regex_match(string(argv[7]), floatRegex)){
-        return -1;
-    }
-    else{
-        parallelDNLM = new ParallelDNLM(stoi(string(argv[2])), stoi(string(argv[3])), stof(string(argv[4])), stof(string(argv[5])), stoi(string(argv[6])), stof(string(argv[7])));
-    }
-
+    if (argc < 2){
+        cerr << "ERROR: You must provide a valid image filename" << endl;
+        exit(1);
+    }else{
+    
     //Open input image
-    const string inputFile = argv[1];
+    const string inputFile = inputFileStr;
     // Find extension point
     string::size_type pAt = inputFile.find_last_of('.');
 
@@ -90,9 +97,9 @@ int main(int argc, char* argv[]){
         cerr <<"Processor not identified"<<endl;
     double start = omp_get_wtime();
     //Process image   
-    outputImage = parallelDNLM->processImage(inputImage);
-    double elapsed = omp_get_wtime() - start;
-    cout <<elapsed<<endl;
+    outputImage = parallelDNLM.processImage(inputImage, windowSize, neighborhoodSize, sigma);
+    double elapsed = omp_get_wtime()-start;
+    cout << elapsed<<endl;
     //Write image to output file.
     imwrite(outputFile, outputImage);
 
@@ -101,20 +108,21 @@ int main(int argc, char* argv[]){
     outputImage.release();
     
     return 0;
+    }
 }
 
 
 
-
-Mat ParallelDNLM::processImage(const Mat& inputImage){
+Mat ParallelDNLM::processImage(const Mat& inputImage, int wSize, int nSize, float sigma){
     //Set parameters for processing
-    Mat fDeceivedNLM = filterDNLM(inputImage, wSize, wSize_n, sigma_r, lambda, kernelLen, kernelStd);
+    
+    Mat fDeceivedNLM = filterDNLM(inputImage, wSize, nSize, sigma);
 
     return fDeceivedNLM;
 }
 
 //Input image must be from 0 to 255
-Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float sigma_r, float lambda, int kernelLen, float kernelStd){
+Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float sigma_r){
     
     //Status variable helps to check for errors
     IppStatus status = ippStsNoErr;

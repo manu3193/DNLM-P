@@ -9,10 +9,10 @@ OPENCV3_HOME = /opt/tools/opencv-3
 # define the C compiler to use
 CC = icpc
 # define any compile-time flags
-CFLAGS_KNL = -qopenmp -O3 -xMIC-AVX512  -fma -align -finline-functions 
+CFLAGS_KNL = -std=c++11 -qopenmp -O3 -xMIC-AVX512  -fma -align -finline-functions 
 CFLAGS_DEBUG = -g -std=c++11 -qopenmp -O0  -align -finline-functions 
 CFLAGS_KNL_DEBUG = -g -std=c++11 -qopenmp -O0 -xMIC-AVX512  -align -finline-functions 
-CFLAGS = -g  -qopenmp -O3  -xCORE-AVX2 -fma -align -finline-functions 
+CFLAGS = -std=c++11  -qopenmp -O3  -xCORE-AVX2 -fma -align -finline-functions 
 
 LIBS = -lippi -lippcv -lippcc -lipps -lippvm  -lippcore  -lopencv_core -lopencv_highgui -lopencv_imgcodecs 
 
