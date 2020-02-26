@@ -8,14 +8,73 @@ using namespace std;
 int main(int argc, char* argv[]){
     ParallelDNLM parallelDNLM;
 
-    //Check input arguments
-    if (argc != 2){
-        cout << "ERROR: You must provide a valid image filename" << endl;
-        return -1;
-    }else{
+    //Parameters to read    
+    string inputFileStr;
+    int windowSize, neighborhoodSize;
+    float sigma;
+   
+    string programName = argv[0];
 
+    for(int i=1; i<argc; i++){
+        string cur(argv[i]);
+        if(cur == "-w"){
+            if((i+1) < argc){
+                i++;
+                if(!(istringstream(argv[i]) >> windowSize)){
+		    cerr << "[error] Expected valid windowSize value after '" << cur << "'." << endl;
+	            exit(1);
+		}
+	    }else{
+	        cerr << "[error] Expected search window size value after '" << cur << "'." << endl;
+	        exit(1);
+	    }
+        }
+        else if(cur == "-n"){
+            if((i+1) < argc){
+                i++;
+                if(!(istringstream(argv[i]) >> neighborhoodSize)){
+	            cerr << "[error] Expected valid neighborhood size value after '" << cur << "'." << endl;
+		    exit(1);
+		}	
+            }else{
+                cerr << "[error] Expected neighborhood size value after '" << cur << "'." << endl;
+                exit(1);
+            }
+        }
+        else if(cur == "-s"){
+            if((i+1) < argc){
+                i++;
+                if(!(istringstream(argv[i]) >> sigma)){
+                    cerr << "[error] Expected valid sigma value after '" << cur << "'." << endl;
+                    exit(1);
+                }
+            }else{
+                cerr << "[error] Expected sigma value after '" << cur << "'." << endl;
+                exit(1);
+            }
+        }
+        else{
+            inputFileStr = cur;
+        }
+    }
+    
+    if(argc<2){
+        cerr << "Usage: "<< programName << " [OPTION]... FILE"<<endl<<endl;
+        cerr << "OPTION:"<<endl;
+        cerr << "  -w          Length in pixels of the squared search window"<<endl;
+        cerr << "  -n          Length in pixels of the squared pixel neighborhood"<<endl;
+        cerr << "  -s          Smooth parameter" <<endl;
+        return 0;
+    }  
+
+    //Check input arguments
+    if (argc < 2){
+        cerr << "ERROR: You must provide a valid image filename" << endl;
+        exit(1);
+    }else{
+    
     //Open input image
-    const string inputFile = argv[1];
+    const string inputFile = inputFileStr;
     // Find extension point
     string::size_type pAt = inputFile.find_last_of('.');
 
@@ -39,9 +98,9 @@ int main(int argc, char* argv[]){
         cerr <<"Processor not identified"<<endl;
 
     double start = omp_get_wtime();
-    outputImage = parallelDNLM.processImage(inputImage);
-    double elapsed = omp_get_wtime() - start;
-    cout <<elapsed<<endl;
+    outputImage = parallelDNLM.processImage(inputImage, windowSize, neighborhoodSize, sigma);
+    double elapsed = omp_get_wtime()-start;
+    cout << elapsed<<endl;
     //Write image to output file.
     imwrite(outputFile, outputImage);
 
@@ -55,22 +114,16 @@ int main(int argc, char* argv[]){
 
 
 
-Mat ParallelDNLM::processImage(const Mat& inputImage){
+Mat ParallelDNLM::processImage(const Mat& inputImage, int wSize, int nSize, float sigma){
     //Set parameters for processing
-    int wRSize = 21;
-    int wSize_n=7;
-    float kernelStd = 0.001f;
-    int kernelLen = 17;
-    float sigma_r = 0.5f; //13
-    float lambda = 3.0f;
     
-    Mat fDeceivedNLM = filterDNLM(inputImage, wRSize, wSize_n, sigma_r, lambda, kernelLen, kernelStd);
+    Mat fDeceivedNLM = filterDNLM(inputImage, wSize, nSize, sigma);
 
     return fDeceivedNLM;
 }
 
 //Input image must be from 0 to 255
-Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float sigma_r, float lambda, int kernelLen, double kernelStd){
+Mat ParallelDNLM::filterDNLM(const Mat& srcImage, int wSize, int wSize_n, float sigma_r){
     
     //Status variable helps to check for errors
     IppStatus status = ippStsNoErr;
