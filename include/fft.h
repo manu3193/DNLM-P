@@ -7,13 +7,13 @@
 
 #define PI 3.14159265
 
-#pragma acc routine seq
+#pragma acc routine vector 
 extern void compute2D_R2CFFT(double * restrict, int, double _Complex * restrict, int, int, double _Complex * restrict);
-#pragma acc routine seq
+#pragma acc routine vector
 extern void compute2D_C2RInvFFT(double _Complex * restrict, int, double * restrict, int, int, double _Complex * restrict);
-#pragma acc routine  seq
+#pragma acc routine vector
 extern void computeCorr(double _Complex * restrict, double _Complex * restrict, double _Complex * restrict, int, int);
-#pragma acc routine seq
+#pragma acc routine vector
 extern void zeroPadding(float * restrict, int, double * restrict, int, int, int);
 #pragma acc routine seq
 extern void compute1D_R2CFFT(double * restrict, int, int, double _Complex * restrict);
