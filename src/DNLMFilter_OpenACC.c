@@ -29,13 +29,14 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
     const int stepBSB = stepBytesSrcBorder/sizeof(float); 
     //Region de datos privada peucldist (create)
     //Nivel de paralelismo gangs collapse
-    #pragma acc data deviceptr(pSrcBorder, pSqrIntegralImage, pDst)
+    #pragma acc data deviceptr(pSrcBorder, pSqrIntegralImage, pDst) 
     {
-        #pragma acc parallel  
+        #pragma acc parallel private(pEuclDist[0:windowHeight*windowWidth], pWindowIJCorr[0:paddedSize*paddedSize], pNeighborhoodIJPadded[0:paddedSize*paddedSize], pWindowPadded[0:paddedSize*paddedSize], pNeighborhoodIJFreq[0:paddedSize*paddedSize], pWindowFreq[0:paddedSize*paddedSize], pWindowIJCorrFreq[0:paddedSize*paddedSize], pBuffer[0:paddedSize*paddedSize])
+
         {
-    	    #pragma acc loop gang collapse(2) private(pEuclDist[0:windowHeight*windowWidth], pWindowIJCorr[0:paddedSize*paddedSize], pNeighborhoodIJPadded[0:paddedSize*paddedSize], pWindowPadded[0:paddedSize*paddedSize], pNeighborhoodIJFreq[0:paddedSize*paddedSize], pWindowFreq[0:paddedSize*paddedSize], pWindowIJCorrFreq[0:paddedSize*paddedSize], pBuffer[0:paddedSize*paddedSize])
+            #pragma acc loop gang collapse(2) 
             for(int j = 0; j < imageHeight; j++)
-    	    {
+            {
                 for (int i = 0; i < imageWidth; i++)
                 {
                     //Compute base address for each array
@@ -109,6 +110,15 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
             }
         }   
     }
+
+    free(pEuclDist);
+    free(pWindowIJCorr);
+    free(pNeighborhoodIJPadded);
+    free(pWindowPadded);
+    free(pNeighborhoodIJFreq);
+    free(pWindowFreq);
+    free(pWindowIJCorrFreq);
+    free(pBuffer);
 }
 
 unsigned int next_pow2(unsigned int n){
