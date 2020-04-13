@@ -3,7 +3,7 @@
 using namespace std;
   
 extern "C" void DNLM_OpenACC(const float*, int, const float*, int, float*, int, int, int, int, int, int, int, int, int, float);
-
+void check_alloc(void *, string);
 
 int main(int argc, char* argv[]){
     ParallelDNLM parallelDNLM;
@@ -169,6 +169,14 @@ Mat ParallelDNLM::filterDNLM(const Mat& inputImage, int wSize, int wSize_n, floa
     pFilteredImage32f = nppiMalloc_32f_C1(imageROISize.width, imageROISize.height, &stepBytesFiltered32f);   
     pFilteredImage8u = nppiMalloc_8u_C1(imageROISize.width, imageROISize.height, &stepBytesFiltered8u);
     
+    check_alloc(pSqrIntegralImage64f, "pSqrIntegralImage64f");
+    check_alloc(pSrcImage8u, "pSrcImage8u");
+    check_alloc(pSrcwBorderImage32f, "pSrcwBorderImage32f");
+    check_alloc(pIntegralImage32f, "pIntegralImage32f");
+    check_alloc(pSrcwBorderImage8u, "pSrcwBorderImage8u");
+    check_alloc(pFilteredImage32f, "pFilteredImage32f");
+    check_alloc(pFilteredImage8u, "pFilteredImage8u");
+  
     cudaMemcpy2D(pSrcImage8u, stepBytesSrc8u, &inputImage.data[0], inputImage.step[0], imageROISize.width, imageROISize.height, cudaMemcpyHostToDevice);
  
     //Set result gpu image to 0
@@ -210,4 +218,10 @@ Mat ParallelDNLM::filterDNLM(const Mat& inputImage, int wSize, int wSize_n, floa
     //cout << elapsed/1000 <<endl;
 
     return outputImage;
+}
+
+void check_alloc(void * pointer, string name){
+    if( pointer == NULL){
+        cerr << "problem alocating memory "<<name<< " "<<pointer<<endl;
+    }
 }
