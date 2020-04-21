@@ -11,7 +11,8 @@ unsigned int next_pow2(unsigned int);
 void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* pSqrIntegralImage, int stepBytesSqrIntegral, float* pDst, int stepBytesDst, int windowRadius, int neighborRadius, int imageWidth, int imageHeight, int windowWidth, int windowHeight, int neighborWidth, int neighborHeight, float sigma_r)
 
 {
-    int extWindowWidth, extWindowHeight = windowWidth + 2 * neighborRadius;
+    int extWindowWidth = windowWidth + 2 * neighborRadius;
+    int extWindowHeight = windowHeight + 2*neighborRadius;
     int  paddedSize = (int) next_pow2((unsigned int) extWindowWidth);
     //Array to store window matrix for euclidean distance
     float * restrict pEuclDist = (float*) malloc(windowHeight * windowWidth * sizeof(float));
@@ -78,7 +79,7 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
                                                             + pSqrIntegralImage[indexIINeighborMNBase + (i + m )] 
                                                             - pSqrIntegralImage[indexIINeighborMNBase + (i + m  + neighborWidth)]
                                                             - pSqrIntegralImage[indexIINeighborMNBaseWOffset + (i + m )];
-                            pEuclDist[n*windowWidth + m]= sqrSumIJNeighborhood + sqrSumMNNeighborhood -2* (float) pWindowIJCorr[(n+neighborRadius)*windowWidth + (m+neighborRadius)];
+                            pEuclDist[n*windowWidth + m]= sqrSumIJNeighborhood + sqrSumMNNeighborhood -2* (float) pWindowIJCorr[n*windowWidth + m];
                         }
                     }
 
@@ -127,7 +128,8 @@ unsigned int next_pow2(unsigned int n){
     n |= n >> 2; 
     n |= n >> 4; 
     n |= n >> 8; 
-    n |= n >> 16; 
+    n |= n >> 16;
+    n |= n >> 32; 
     n++; 
     return n; 
 } 
