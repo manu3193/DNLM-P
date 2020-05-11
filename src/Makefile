@@ -1,5 +1,3 @@
-CUDA_HOME=/usr/local/cuda-10.1
-OPENCV_HOME = /root/Manuel/opencv/
 
 # define the compilers to use
 PGI = pgcc
