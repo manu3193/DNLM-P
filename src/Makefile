@@ -1,38 +1,39 @@
-CUDA_HOME=/opt/tools/cuda-10.1.105
-OPENCV_HOME = /opt/tools/opencv-3
+CUDA_HOME=/usr/local/cuda-10.1
+OPENCV_HOME = /root/Manuel/opencv/
 
 # define the compilers to use
-CC = nvcc 
 PGI = pgcc
 PGI++ = pgc++
 # define any compile-time flags
-CFLAGS_LINK = -acc -g -Minfo=all -ta=tesla:cc35 -ta=tesla:lineinfo -Mcuda -O0 
-CFLAGS = -std=c++11 -g -G -arch=sm_35 -rdc=true -ccbin=$(PGI++) -Xcompiler "-ta=tesla:cc35 -ta=tesla:rdc -Mcuda" -cudart static -O0# -use_fast_math -O3
-CFLAGSPGI = -acc -Minfo=all -g -ta=tesla:cc35 -ta=tesla:lineinfo -Minline -O0 #-Mvect -fast -O3
-LIBS = -lnppial_static -lnppitc_static -lnppidei_static -lnppif_static -lnppisu_static -lnppist_static -lnpps_static -lnppc_static -lculibos -lopencv_core -lopencv_highgui -lopencv_imgcodecs
-LDFLAGS = -L$(CUDA_HOME)/lib64 -L$(OPENCV_HOME)/lib
+CFLAGS_LINK_MC = -acc -g -Minfo=all -ta=multicore 
+CFLAGS_MC = -acc -g -ta=multicore
+CFLAGSPGI_MC = -acc -Minfo=all -g -ta=multicore #-Minline
+LIBS_MC = -lopencv_core -lopencv_highgui -lopencv_imgcodecs -lopencv_imgproc
+LDFLAGS_MC = -L$(OPENCV_HOME)/lib
+
 
 # define include path flags 
-INCLUDES= -I../include -I$(CUDA_HOME)/include -I$(OPENCV_HOME)/include 
+INCLUDES= -I../include -I$(OPENCV_HOME)/include 
 
 # define the executable file
-MAIN = nlmfilter_k40_fft
+MAIN_MC = nlmfilter_multicore_fft
 
-all: clean $(MAIN)
+all: clean $(MAIN_MC)
 
 .PHONY: clean
 
-$(MAIN): fft.o DNLMFilter_OpenACC.o ParallelDNLM.o  
-	$(PGI++) $(CFLAGS_LINK) -o $@ $^ $(LDFLAGS) $(INCLUDES)  $(LIBS)  
+$(MAIN_MC): fft.o DNLMFilter_OpenACC.o ParallelDNLM.o  
+	$(PGI++) $(CFLAGS_LINK_MC) -o $@ $^ $(LDFLAGS_MC) $(INCLUDES)  $(LIBS_MC)  
 
-ParallelDNLM.o: ParallelDNLM.cpp
-	$(CC) $(CFLAGS) $(INCLUDES) -dc $< -o $@
+ParallelDNLM.o: ParallelDNLM_MC.cpp
+	$(PGI++) $(CFLAGS_MC) $(INCLUDES) -c $< -o $@
 
 DNLMFilter_OpenACC.o: DNLMFilter_OpenACC.c
-	$(PGI) $(CFLAGSPGI) -c $< -o $@ $(INCLUDES)
+	$(PGI++) $(CFLAGSPGI_MC) -c $< -o $@ $(INCLUDES)
 
 fft.o: fft.c
-	$(PGI) $(CFLAGSPGI) -c $< -o $@ $(INCLUDES)
+	$(PGI++) $(CFLAGSPGI_MC) -c $< -o $@ $(INCLUDES)
+
 
 clean:
 	rm -rf $(MAIN) *.o 

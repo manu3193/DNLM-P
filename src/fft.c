@@ -8,7 +8,6 @@ void computeCorr(double _Complex * restrict signal, double _Complex * restrict k
                 }
         }
 }
-
 void zeroPadding(float * restrict image, int step, double * restrict paddedImage, int height, int width, int padded_size){
       #pragma acc  loop vector collapse(2)
         for(int row = 0; row < height; row++){
@@ -17,18 +16,16 @@ void zeroPadding(float * restrict image, int step, double * restrict paddedImage
                 }
         }
 }
-
 void compute2D_C2RInvFFT(double _Complex * restrict inputImage, int step, double * restrict outputImage, int width, int height, double _Complex * restrict pBuffer) {
-        #pragma acc loop vector 
+        #pragma acc loop vector
         for (int row = 0; row < height; row++) {
                 compute1D_C2CInvFFT(&inputImage[row*step], 1, width, &pBuffer[row*step]);
         }
-        #pragma acc  loop vector 
+        #pragma acc  loop vector
         for(int col = 0; col < width; col++){
                 compute1D_C2RInvFFT(&pBuffer[col], width, height, &outputImage[col]);
         }
 }
-
 void compute1D_C2RInvFFT(double _Complex * restrict image, int step, int N, double * restrict outputImage){
 	#pragma acc loop seq
         for ( int k = 0; k < N; k++){
@@ -48,7 +45,6 @@ void compute1D_C2RInvFFT(double _Complex * restrict image, int step, int N, doub
             outputImage[k*step] = creal((sumEven + sumOdd) / N);
         }
 }
-
 void compute1D_C2CInvFFT(double _Complex * restrict image, int step, int N, double _Complex * restrict outputImage){
 	#pragma acc loop seq
         for ( int k = 0; k < N; k++){
@@ -69,9 +65,8 @@ void compute1D_C2CInvFFT(double _Complex * restrict image, int step, int N, doub
         }
 }
 
-
 void compute2D_R2CFFT(double * restrict inputImage, int step, double _Complex * restrict outputImage, int width, int height, double _Complex * restrict pBuffer) {
-        #pragma acc loop vector    
+        #pragma acc loop vector
         for (int row = 0; row < height; row++) {
                 compute1D_R2CFFT(&inputImage[row*step], 1, width, &pBuffer[row*step]);
         }
@@ -82,7 +77,7 @@ void compute2D_R2CFFT(double * restrict inputImage, int step, double _Complex * 
 }
 
 void compute1D_R2CFFT(double * restrict inputSignal, int step, int N, double _Complex * restrict outputSignal){
-        #pragma acc loop seq 
+        #pragma acc loop seq
         for (int k = 0; k < N; k++) {
                double _Complex sumEven = 0.0 + 0.0 * I;
                double _Complex sumOdd = 0.0 + 0.0 * I;
@@ -122,6 +117,8 @@ void compute1D_C2CFFT( double _Complex * restrict inputSignal, int step, int N, 
                outputSignal[k*step] = sumEven + sumOdd;
        }
 }
+
+
 
 //computes the spin of the signal around a circle at its frequency
 double _Complex eIThetta(int k, int N, int n, int offset) {

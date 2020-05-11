@@ -28,14 +28,12 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
     const int stepBD = stepBytesDst/sizeof(float);
     const int stepBSI = stepBytesSqrIntegral/sizeof(float);
     const int stepBSB = stepBytesSrcBorder/sizeof(float); 
-    //Region de datos privada peucldist (create)
-    //Nivel de paralelismo gangs collapse
-    #pragma acc data deviceptr(pSrcBorder, pSqrIntegralImage, pDst) 
+    #pragma acc data present(pSrcBorder, pSqrIntegralImage, pDst)
     {
-        #pragma acc parallel private(pEuclDist[0:windowHeight*windowWidth], pWindowIJCorr[0:paddedSize*paddedSize], pNeighborhoodIJPadded[0:paddedSize*paddedSize], pWindowPadded[0:paddedSize*paddedSize], pNeighborhoodIJFreq[0:paddedSize*paddedSize], pWindowFreq[0:paddedSize*paddedSize], pWindowIJCorrFreq[0:paddedSize*paddedSize], pBuffer[0:paddedSize*paddedSize])
 
+        #pragma acc parallel
         {
-            #pragma acc loop gang collapse(2) 
+            #pragma acc loop gang collapse(2) private(pEuclDist[0:windowHeight*windowWidth], pWindowIJCorr[0:paddedSize*paddedSize], pNeighborhoodIJPadded[0:paddedSize*paddedSize], pWindowPadded[0:paddedSize*paddedSize], pNeighborhoodIJFreq[0:paddedSize*paddedSize], pWindowFreq[0:paddedSize*paddedSize], pWindowIJCorrFreq[0:paddedSize*paddedSize], pBuffer[0:paddedSize*paddedSize])
             for(int j = 0; j < imageHeight; j++)
             {
                 for (int i = 0; i < imageWidth; i++)
@@ -65,7 +63,6 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
                     compute2D_R2CFFT(pNeighborhoodIJPadded, paddedSize, pNeighborhoodIJFreq, paddedSize, paddedSize, pBuffer);
                     computeCorr(pWindowFreq, pNeighborhoodIJFreq, pWindowIJCorrFreq,  paddedSize, paddedSize);
                     compute2D_C2RInvFFT(pWindowIJCorrFreq, paddedSize, pWindowIJCorr, paddedSize, paddedSize, pBuffer); 
-                    
                     #pragma acc loop vector collapse(2) 
                     for (int n = 0; n < windowHeight; n++)
                     {
@@ -79,7 +76,7 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
                                                             + pSqrIntegralImage[indexIINeighborMNBase + (i + m )] 
                                                             - pSqrIntegralImage[indexIINeighborMNBase + (i + m  + neighborWidth)]
                                                             - pSqrIntegralImage[indexIINeighborMNBaseWOffset + (i + m )];
-                            pEuclDist[n*windowWidth + m]= sqrSumIJNeighborhood + sqrSumMNNeighborhood -2* (float) pWindowIJCorr[n*windowWidth + m];
+                            pEuclDist[n*windowWidth + m]= sqrSumIJNeighborhood + sqrSumMNNeighborhood -2* (float) pWindowIJCorr[n*paddedSize + m];
                         }
                     }
 
@@ -129,7 +126,6 @@ unsigned int next_pow2(unsigned int n){
     n |= n >> 4; 
     n |= n >> 8; 
     n |= n >> 16;
-    n |= n >> 32; 
-    n++; 
+    n++;
     return n; 
 } 
