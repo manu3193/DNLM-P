@@ -59,7 +59,7 @@ int main(int argc, char* argv[]){
         }
     }
     
-    if(argc<2){
+    if(argc<=2){
         cerr << "Usage: "<< programName << " [OPTION]... FILE"<<endl<<endl;
         cerr << "OPTION:"<<endl;
         cerr << "  -w          Length in pixels of the squared search window"<<endl;
@@ -93,19 +93,24 @@ int main(int argc, char* argv[]){
     int imageWidth = inputImage.cols;
     int imageHeight = inputImage.rows;
     int borderOffset = windowRadius+neighborRadius;
-
+    cout << "border offset: "<<borderOffset<<endl;;
     Mat inputImageBorder;
     copyMakeBorder(inputImage, inputImageBorder, borderOffset, borderOffset, borderOffset, borderOffset, BORDER_REFLECT);
 
     Mat inputImage32f = Mat(inputImage.size(), CV_32FC1);
-    inputImageBorder.convertTo(inputImage32f, CV_32FC1, 1.0/255.0);
+    inputImageBorder.convertTo(inputImage32f, CV_32FC1, 1/255.0);
     //Process image 
     Mat outputImage  = Mat(inputImage.size(), inputImage.type());
     Mat outputImage32f = Mat(inputImage.size(), inputImage32f.type());
     //Compute Integral Image
     Mat integralImage, sqrIntegralImage32f;
     integral(inputImage32f, integralImage, sqrIntegralImage32f, CV_32F, CV_32F);
-
+ 
+    if ( ! inputImage32f.isContinuous() )
+    { 
+        inputImage32f = inputImage32f.clone();
+    }
+    
     double start = omp_get_wtime();
     DNLM_OpenACC(inputImage32f.ptr<float>(0), inputImage32f.step[0], sqrIntegralImage32f.ptr<float>(0), sqrIntegralImage32f.step[0], outputImage32f.ptr<float>(0), outputImage32f.step[0], windowRadius, neighborRadius, imageWidth, imageHeight, windowSize , windowSize, neighborhoodSize, neighborhoodSize, sigma);
     double elapsed = omp_get_wtime()-start;
@@ -120,7 +125,7 @@ int main(int argc, char* argv[]){
   
     if (baseOutput.data!=NULL)
     {
-        baseOutput.convertTo(baseOutput, CV_8UC1, 255.0);
+        baseOutput.convertTo(baseOutput, CV_8UC1, 1.0);
         double msd = norm(baseOutput, outputImage);
         double pixels = (double) baseOutput.total();
         msd = msd * msd / pixels;
