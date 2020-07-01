@@ -18,8 +18,8 @@ void DNLM_OpenACC(const float* pSrcBorder, int stepBytesSrcBorder, const float* 
     float * restrict pEuclDist = (float*) malloc(windowHeight * windowWidth * sizeof(float));
 
     double * restrict pWindowIJCorr = (double*) malloc(paddedSize * paddedSize * sizeof(double));
-    double * restrict pNeighborhoodIJPadded = (double *) malloc(paddedSize * paddedSize * sizeof(double));
-    double * restrict pWindowPadded = (double *) malloc(paddedSize * paddedSize * sizeof(double));
+    double * restrict pNeighborhoodIJPadded = (double *) calloc(paddedSize * paddedSize, sizeof(double));
+    double * restrict pWindowPadded = (double *) calloc(paddedSize * paddedSize, sizeof(double));
     double _Complex * restrict pNeighborhoodIJFreq = (double _Complex *) malloc(paddedSize * paddedSize * sizeof(double _Complex));
     double _Complex * restrict pWindowFreq = (double _Complex *) malloc(paddedSize * paddedSize * sizeof(double _Complex));
     double _Complex * restrict pWindowIJCorrFreq = (double _Complex*) malloc(paddedSize * paddedSize * sizeof(double _Complex));
