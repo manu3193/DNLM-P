@@ -27,7 +27,7 @@ int DNLMFilter::dnlmFilter(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, int
 int DNLMFilter::dnlmFilterBW(const Ipp32f* pSrcBorder, int stepBytesSrcBorder, const Ipp32f* pUSMImage, int stepBytesUSM, const Ipp32f* pSqrIntegralImage, int stepBytesSqrIntegral, Ipp32f* pDst, int stepBytesDst, IppiSize imageSize, int w, int w_n, float sigma_r){
 
     //Configuration for the correlation primitive
-    IppEnum corrAlgCfg = (IppEnum) (ippAlgFFT | ippiNormNone | ippiROIValid);
+    IppEnum corrAlgCfg = (IppEnum) (ippAlgDirect | ippiNormNone | ippiROIValid);
     //Compute border offset for border replicated image
     const int windowTopLeftOffset = floor(w_n/2);
     const int imageTopLeftOffset = floor(w/2) + windowTopLeftOffset;
